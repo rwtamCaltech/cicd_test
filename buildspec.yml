@@ -1,0 +1,13 @@
+#instructions for AWS CodeBuild to run unit tests.  
+#Refer to Build Specification Reference for more information about the capabilities and syntax available for buildspec files
+#Reference: https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  pre_build:
+    commands:
+      - pip install -r requirements.txt
+      - python app_test.py
