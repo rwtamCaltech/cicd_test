@@ -33,7 +33,7 @@
 
 """
 Main application file
-Works with additional logging statements
+Works with additional logging statements, test Dependabot
 """
 from flask import Flask
 import logging
