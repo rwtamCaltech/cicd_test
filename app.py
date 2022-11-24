@@ -34,6 +34,7 @@
 """
 Main application file
 Works with additional logging statements, test Dependabot
+added secret keys
 """
 from flask import Flask
 import logging
