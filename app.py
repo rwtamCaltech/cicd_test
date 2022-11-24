@@ -16,17 +16,38 @@
 
 
 
+# """
+# Main application file
+# This is to break the unit test
+# """
+# from flask import Flask
+# app = Flask(__name__)
+
+# @app.route('/<random_string>')
+# def returnBackwardsString(random_string):
+#     """Reverse and return the provided URI"""
+#     return "Breaking the unit test"
+
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=8080)
+
 """
 Main application file
-This is to break the unit test
+Works with additional logging statements
 """
 from flask import Flask
+import logging
 app = Flask(__name__)
+
+# Initialize Logger
+LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.INFO)
 
 @app.route('/<random_string>')
 def returnBackwardsString(random_string):
     """Reverse and return the provided URI"""
-    return "Breaking the unit test"
+    LOGGER.info('Received a message: %s', random_string)
+    return "".join(reversed(random_string))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
