@@ -15,7 +15,16 @@
                     "protocol": "tcp"
                 }
                 
-            ]
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "cicd-container",
+                    "awslogs-region": "us-west-2",
+                    "awslogs-create-group": "true",
+                    "awslogs-stream-prefix": "cicd"
+                }
+            }
         }
     ],
     "volumes": [],
