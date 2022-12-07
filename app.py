@@ -39,7 +39,16 @@ added secret keys
 from flask import Flask
 import logging
 import time
+import os
+
 app = Flask(__name__)
+
+import django
+
+#briefly commented
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quakes2aws_datastore.settings')
+django.setup()
+
 
 from quakes2aws_datastore.logging import logger  # noqa:E402
 from django.db import connection
