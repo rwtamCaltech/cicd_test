@@ -19,8 +19,8 @@ WORKDIR /usr/src/app
 COPY common-layer/dependencies /tmp/dependencies 
 
 # Install requirements
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirementsTwo.txt ./
+RUN pip install --no-cache-dir -r requirementsTwo.txt
 
 RUN find . -name "*.pyc" -delete 
 #to avoid bad magic number errors? https://stackoverflow.com/questions/514371/whats-the-bad-magic-number-error
