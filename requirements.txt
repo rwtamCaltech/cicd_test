@@ -35,8 +35,8 @@ contexttimer                           # https://github.com/brouberol/contexttim
 
 # ADS plugins and libraries
 # ------------------------------------------------------------------------------
-https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
-https://s3-us-west-2.amazonaws.com/imss-code-drop/ads-extras/ads-extras-0.2.2.zip
+# https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
+# https://s3-us-west-2.amazonaws.com/imss-code-drop/ads-extras/ads-extras-0.2.2.zip
 
 # Our own code
 # ------------------------------------------------------------------------------
