@@ -24,5 +24,7 @@ phases:
     commands:
       # - cp ~/.aws/config /.aws/config
       - pip install -r requirements.txt
+      - pip install djangoItems/django-djunk-0.32.1.zip
+      - pip install djangoItems/ads-extras-0.2.2.zip
       - pip install common-layer/dependencies/quakes2aws.zip
       - python app_test.py
