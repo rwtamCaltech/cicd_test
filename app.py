@@ -46,6 +46,7 @@ app = Flask(__name__)
 import django
 
 #briefly commented
+#Testing
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quakes2aws_datastore.settings')
 django.setup()
 
