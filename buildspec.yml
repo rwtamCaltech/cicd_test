@@ -22,7 +22,7 @@ phases:
       python: 3.8
   pre_build:
     commands:
-      - cp ~/.aws/config /.aws/config
+      # - cp ~/.aws/config /.aws/config
       - pip install -r requirements.txt
       - pip install common-layer/dependencies/quakes2aws.zip
       - python app_test.py

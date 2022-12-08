@@ -22,6 +22,8 @@ COPY common-layer/dependencies /tmp/dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install /tmp/dependencies/quakes2aws.zip
+RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
+RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/ads-extras/ads-extras-0.2.2.zip
 RUN find . -name "*.pyc" -delete 
 #to avoid bad magic number errors? https://stackoverflow.com/questions/514371/whats-the-bad-magic-number-error
 
