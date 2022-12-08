@@ -19,6 +19,14 @@ WORKDIR /usr/src/app
 COPY common-layer/dependencies /tmp/dependencies 
 COPY djangoItems /tmp/djangoItems 
 
+#set environment variables to define the DB; these were previously set in our lambda function, and would help to establish a connection
+ENV DB_HOST="quakes2aws.c5te7lavw4oy.us-west-2.rds.amazonaws.com"
+ENV DB_NAME="datastore_test"
+ENV DB_PASSWORD="alsdfkj0932ljafds"
+ENV DB_USER="datastore_test_u"
+ENV ARCHIVE_BUCKET_NAME="seismolab-quakes2aws-test-input"
+ENV ARCHIVE_TO_S3="True"
+
 # Install requirements
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
