@@ -17,13 +17,16 @@ FROM python:3
 # Set application working directory
 WORKDIR /usr/src/app
 COPY common-layer/dependencies /tmp/dependencies 
+COPY djangoItems /tmp/djangoItems 
 
 # Install requirements
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install /tmp/djangoItems/django-djunk-0.32.1.zip
+RUN pip install /tmp/djangoItems/ads-extras-0.2.2.zip
 RUN pip install /tmp/dependencies/quakes2aws.zip
-RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
-RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/ads-extras/ads-extras-0.2.2.zip
+# RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
+# RUN pip install https://s3-us-west-2.amazonaws.com/imss-code-drop/ads-extras/ads-extras-0.2.2.zip
 RUN find . -name "*.pyc" -delete 
 #to avoid bad magic number errors? https://stackoverflow.com/questions/514371/whats-the-bad-magic-number-error
 
