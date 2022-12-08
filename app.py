@@ -72,7 +72,12 @@ if __name__ == '__main__':
             with connection.cursor() as cursor:
                 cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
                 row = cursor.fetchall() 
-                latest_endtime=row[0][0] #should be of type 'float'
+
+                #RT 12/8/22 exception here
+                try:
+                    latest_endtime=row[0][0] #should be of type 'float'
+                except:
+                    print("Out of range, no latest endtime found")
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
 
         logger.info(
