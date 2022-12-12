@@ -68,6 +68,11 @@ def returnBackwardsString(random_string):
 if __name__ == '__main__':
     #Can set a while True, time.sleep later on to simulate, want to make sure it has access to our DB
     while True:
+        with Timer() as establish_connection:
+            connection_test=connection.ensure_connection()
+            print("connection found")
+            print(connection_test)
+
         with Timer() as fetch_time:
             with connection.cursor() as cursor:
                 cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
@@ -79,9 +84,11 @@ if __name__ == '__main__':
                 except:
                     print("Out of range, no latest endtime found")
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
+        establishconn_items_elapsed=round(establish_connection.elapsed,3)
 
         logger.info(
             'information',
+            connect_time=establishconn_items_elapsed,
             fetch_time=fetch_time_items_elapsed,
             latest_endtime_found=latest_endtime)
         
