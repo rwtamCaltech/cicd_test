@@ -83,6 +83,7 @@ if __name__ == '__main__':
                     latest_endtime=row[0][0] #should be of type 'float'
                 except:
                     print("Out of range, no latest endtime found")
+                    latest_endtime='N/A'
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
         establishconn_items_elapsed=round(establish_connection.elapsed,3)
 
