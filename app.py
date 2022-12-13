@@ -50,7 +50,6 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quakes2aws_datastore.settings')
 django.setup()
 
-from quakes2aws_datastore.core.models import State
 from django.utils import timezone
 from quakes2aws_datastore.logging import logger  # noqa:E402
 from django.db import connection

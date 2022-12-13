@@ -40,6 +40,7 @@ RUN find . -name "*.pyc" -delete
 
 # Install application
 COPY app.py ./
+COPY timeout.py ./
 # Run application
 CMD python app.py
 
