@@ -107,9 +107,9 @@ if __name__ == '__main__':
                 db_safe_flag=1
         
         if db_safe_flag==0:
-            statement="Commence getting waveforms")
+            statement="Commence getting waveforms"
         else:
-            statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage")
+            statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage"
 
 
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
