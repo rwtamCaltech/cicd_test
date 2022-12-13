@@ -70,15 +70,20 @@ def returnBackwardsString(random_string):
 
 #implemented a timeout decorator, we want our access to happen within 2 seconds, otherwise we "sense" something is wrong and get data through other means
 #We saw that connection could take 40+ seconds
-@timeout(2)
+@timeout(0.000005)
 def connect_db(connection):
     with connection.cursor() as cursor:
+        #https://stackoverflow.com/questions/67678201/how-to-specify-timeout-for-a-query-using-django
         cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
         cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
         row = cursor.fetchall() 
         cursor.close()
-
-    return row
+    
+    with connection.cursor() as cursorTwo:
+        cursorTwo.execute("SELECT pg_size_pretty( pg_total_relation_size('sample_set') );")
+        rowTwo= cursorTwo.fetchall() 
+        cursorTwo.close()
+    return row,rowTwo
 
 
 if __name__ == '__main__':
@@ -94,9 +99,12 @@ if __name__ == '__main__':
             connection_test=connection.ensure_connection()
             # print("connection found")
             # print(connection_test)
+
+
+
         with Timer() as fetch_time:
             try:
-                row=connect_db(connection)
+                row,rowTwo=connect_db(connection)
             except:
                 print("Timeout")
                 db_safe_flag=1
@@ -110,6 +118,14 @@ if __name__ == '__main__':
             except:
                 print("Out of range, no latest endtime found")
                 latest_endtime='N/A'
+
+            #RT 12/8/22 exception here
+            try:
+                storage_size=rowTwo[0][0] #should be of type 'float'
+            except:
+                print("Out of range, no storage size found")
+                storage_size='N/A'
+
         else:
             statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage"
             latest_endtime='DB replenish'
@@ -123,7 +139,8 @@ if __name__ == '__main__':
             connect_time=establishconn_items_elapsed,
             fetch_time=fetch_time_items_elapsed,
             latest_endtime_found=latest_endtime,
-            statement_used=statement)
+            statement_used=statement,
+            storage_size=storage_size)
         
         #12/12/22 RT update: We don't want overruns on time here, but can have overruns (if the fetch time exceeds 30 seconds, then we can't sleep for a negative #,
         # this would error out)
