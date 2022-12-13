@@ -107,9 +107,9 @@ if __name__ == '__main__':
                 db_safe_flag=1
         
         if db_safe_flag==0:
-            print("Commence getting waveforms")
+            statement="Commence getting waveforms")
         else:
-            print("Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage")
+            statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage")
 
 
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
@@ -119,7 +119,8 @@ if __name__ == '__main__':
             'information',
             connect_time=establishconn_items_elapsed,
             fetch_time=fetch_time_items_elapsed,
-            latest_endtime_found=latest_endtime)
+            latest_endtime_found=latest_endtime,
+            statement_used=statement)
         
         #12/12/22 RT update: We don't want overruns on time here, but can have overruns (if the fetch time exceeds 30 seconds, then we can't sleep for a negative #,
         # this would error out)
