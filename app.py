@@ -73,17 +73,11 @@ def returnBackwardsString(random_string):
 @timeout(2)
 def connect_db(connection):
     with connection.cursor() as cursor:
+        # cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
         cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
         row = cursor.fetchall() 
 
-        #RT 12/8/22 exception here
-        try:
-            latest_endtime=row[0][0] #should be of type 'float'
-        except:
-            print("Out of range, no latest endtime found")
-            latest_endtime='N/A'
-    
-    return latest_endtime
+    return row
 
 
 if __name__ == '__main__':
@@ -101,15 +95,23 @@ if __name__ == '__main__':
             # print(connection_test)
         with Timer() as fetch_time:
             try:
-                latest_endtime=connect_db(connection)
+                row=connect_db(connection)
             except:
                 print("Timeout")
                 db_safe_flag=1
         
         if db_safe_flag==0:
             statement="Commence getting waveforms"
+
+            #RT 12/8/22 exception here
+            try:
+                latest_endtime=row[0][0] #should be of type 'float'
+            except:
+                print("Out of range, no latest endtime found")
+                latest_endtime='N/A'
         else:
             statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage"
+            latest_endtime='DB replenish'
 
 
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
