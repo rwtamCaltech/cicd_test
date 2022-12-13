@@ -73,9 +73,10 @@ def returnBackwardsString(random_string):
 @timeout(2)
 def connect_db(connection):
     with connection.cursor() as cursor:
-        # cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
+        cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
         cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
         row = cursor.fetchall() 
+        cursor.close()
 
     return row
 
