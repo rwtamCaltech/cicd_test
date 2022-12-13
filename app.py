@@ -69,8 +69,8 @@ def returnBackwardsString(random_string):
     return "".join(reversed(random_string))
 
 #implemented a timeout decorator, we want our access to happen within 2 seconds, otherwise we "sense" something is wrong and get data through other means
-#We saw that connection could take 40+ seconds
-@timeout(0.000005)
+#We saw that connection could take 40+ seconds; SETTING to 0.000005 works
+@timeout(2)
 def connect_db(connection):
     with connection.cursor() as cursor:
         #https://stackoverflow.com/questions/67678201/how-to-specify-timeout-for-a-query-using-django
