@@ -69,23 +69,14 @@ def returnBackwardsString(random_string):
     LOGGER.info('Received a message: %s', random_string)
     return "".join(reversed(random_string))
 
-#implemented a timeout decorator, we want our access to happen within 2 seconds, otherwise we "sense" something is wrong and get data through other means
-#We saw that connection could take 40+ seconds
+#implemented a timeout decorator, we want our trim to happen within 2 seconds, otherwise we "sense" something is wrong and get data through other means
 @timeout(2)
-def connect_db(connection):
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
-        row = cursor.fetchall() 
-
-        #RT 12/8/22 exception here
-        try:
-            latest_endtime=row[0][0] #should be of type 'float'
-        except:
-            print("Out of range, no latest endtime found")
-            latest_endtime='N/A'
-    
-    return latest_endtime
-
+def trim_data_func(horizon,latest_endtime):
+    if latest_endtime>horizon: #realtime scenarios, we would want to trim the data
+        State(live=True).trim(horizon)
+    else: #we might want to consider trimming older irrelevant data in the out files as well
+        outfile_trim=latest_endtime-300 #trim the 300 seconds away from our latest time in our database (5 minutes away as well)
+        State(live=True).trim(outfile_trim)
 
 if __name__ == '__main__':
     #Can set a while True, time.sleep later on to simulate, want to make sure it has access to our DB
@@ -100,19 +91,34 @@ if __name__ == '__main__':
             connection_test=connection.ensure_connection()
             # print("connection found")
             # print(connection_test)
-        with Timer() as fetch_time:
-            try:
-                latest_endtime=connect_db(connection)
-            except:
-                print("Timeout")
-                db_safe_flag=1
+            with Timer() as fetch_time:
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
+                    row = cursor.fetchall() 
+
+                    #RT 12/8/22 exception here
+                    try:
+                        latest_endtime=row[0][0] #should be of type 'float'
+                    except:
+                        print("Out of range, no latest endtime found")
+                        latest_endtime='N/A'
+            
+        with Timer() as trim_data_time:
+            if latest_endtime!='N/A':
+                try:
+                    trim_data_func(horizon,latest_endtime)
+                except TimeoutError:
+                    print("Timeout")
+                    db_safe_flag=1
         
-        if db_safe_flag==0:
-            print("Commence getting waveforms")
-        else:
-            print("Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage")
 
 
+
+
+
+
+
+            
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
         establishconn_items_elapsed=round(establish_connection.elapsed,3)
 
@@ -124,10 +130,9 @@ if __name__ == '__main__':
         
         #12/12/22 RT update: We don't want overruns on time here, but can have overruns (if the fetch time exceeds 30 seconds, then we can't sleep for a negative #,
         # this would error out)
-        if fetch_time_items_elapsed<=30:
-            time_sleeping=30-fetch_time_items_elapsed
-            time.sleep(time_sleeping) #30-the time it took to fetch
-        #otherwise, no sleeping, it goes to the next loop immediately
+        time_sleeping=30-fetch_time_items_elapsed
+        
+        time.sleep(time_sleeping) #30-the time it took to fetch
 
 
     # app.run(host='0.0.0.0', port=8080)
