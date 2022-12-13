@@ -74,16 +74,17 @@ def returnBackwardsString(random_string):
 def connect_db(connection):
     with connection.cursor() as cursor:
         #https://stackoverflow.com/questions/67678201/how-to-specify-timeout-for-a-query-using-django
-        cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
+        # cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
         cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
         row = cursor.fetchall() 
-        cursor.close()
+        # cursor.close()
     
     with connection.cursor() as cursorTwo:
         cursorTwo.execute("SELECT pg_size_pretty( pg_total_relation_size('sample_set') );")
         rowTwo= cursorTwo.fetchall() 
-        cursorTwo.close()
+        # cursorTwo.close()
     return row,rowTwo
+    # return rowTwo
 
 
 if __name__ == '__main__':
@@ -136,7 +137,7 @@ if __name__ == '__main__':
         establishconn_items_elapsed=round(establish_connection.elapsed,3)
 
         logger.info(
-            'information',
+            'info',
             connect_time=establishconn_items_elapsed,
             fetch_time=fetch_time_items_elapsed,
             latest_endtime_found=latest_endtime,
