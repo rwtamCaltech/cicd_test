@@ -129,6 +129,7 @@ if __name__ == '__main__':
         else:
             statement="Ping lambda fn that accesses alternate DB/DynamoDB for data when DB is replenishing storage"
             latest_endtime='DB replenish'
+            storage_size='N/A'
 
 
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
