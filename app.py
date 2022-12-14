@@ -85,12 +85,12 @@ def connect_db(connection):
         # cursorTwo.close()
 
     #This is to truly verify if I am connected to the ReadReplica to read out information.
-    with connection.cursor() as cursorThree:
-        cursorThree.execute("\conninfo")
-        rowThree= cursorThree.fetchall() 
+    # with connection.cursor() as cursorThree:
+    #     cursorThree.execute("\conninfo")
+    #     rowThree= cursorThree.fetchall() 
 
-    return row,rowTwo,rowThree
-    # return rowTwo
+    # return row,rowTwo,rowThree
+    return rowTwo
 
 
 if __name__ == '__main__':
@@ -111,10 +111,10 @@ if __name__ == '__main__':
 
         with Timer() as fetch_time:
             try:
-                row,rowTwo,rowThree=connect_db(connection)
+                row,rowTwo=connect_db(connection)
             except:
                 print("Timeout")
-                rowThree='No conn info'
+                # rowThree='No conn info'
                 db_safe_flag=1
         
         if db_safe_flag==0:
@@ -151,7 +151,6 @@ if __name__ == '__main__':
             latest_endtime_found=latest_endtime,
             statement_used=statement,
             storage_size=storage_size,
-            connectinfo=rowThree,
             connectiontest=connection_test)
         
         #12/12/22 RT update: We don't want overruns on time here, but can have overruns (if the fetch time exceeds 30 seconds, then we can't sleep for a negative #,
