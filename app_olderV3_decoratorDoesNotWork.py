@@ -83,13 +83,7 @@ def connect_db(connection):
         cursorTwo.execute("SELECT pg_size_pretty( pg_total_relation_size('sample_set') );")
         rowTwo= cursorTwo.fetchall() 
         # cursorTwo.close()
-
-    #This is to truly verify if I am connected to the ReadReplica to read out information.
-    with connection.cursor() as cursorThree:
-        cursorThree.execute("\conninfo")
-        rowThree= cursorThree.fetchall() 
-
-    return row,rowTwo,rowThree
+    return row,rowTwo
     # return rowTwo
 
 
@@ -111,7 +105,7 @@ if __name__ == '__main__':
 
         with Timer() as fetch_time:
             try:
-                row,rowTwo,rowThree=connect_db(connection)
+                row,rowTwo=connect_db(connection)
             except:
                 print("Timeout")
                 db_safe_flag=1
@@ -142,16 +136,13 @@ if __name__ == '__main__':
         fetch_time_items_elapsed=round(fetch_time.elapsed,3)
         establishconn_items_elapsed=round(establish_connection.elapsed,3)
 
-        #Also want to print out what we see in the connection test as well
         logger.info(
             'info',
             connect_time=establishconn_items_elapsed,
             fetch_time=fetch_time_items_elapsed,
             latest_endtime_found=latest_endtime,
             statement_used=statement,
-            storage_size=storage_size,
-            connectinfo=rowThree,
-            connectiontest=connection_test)
+            storage_size=storage_size)
         
         #12/12/22 RT update: We don't want overruns on time here, but can have overruns (if the fetch time exceeds 30 seconds, then we can't sleep for a negative #,
         # this would error out)
