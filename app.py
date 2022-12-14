@@ -114,6 +114,7 @@ if __name__ == '__main__':
                 row,rowTwo,rowThree=connect_db(connection)
             except:
                 print("Timeout")
+                rowThree='No conn info'
                 db_safe_flag=1
         
         if db_safe_flag==0:
