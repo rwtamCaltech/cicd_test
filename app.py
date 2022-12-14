@@ -90,7 +90,7 @@ def connect_db(connection):
     #     rowThree= cursorThree.fetchall() 
 
     # return row,rowTwo,rowThree
-    return rowTwo
+    return row,rowTwo
 
 
 if __name__ == '__main__':
