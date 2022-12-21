@@ -33,7 +33,7 @@ sentry-sdk==0.7.14                            # https://github.com/getsentry/sen
 structlog                             # https://github.com/hynek/structlog ==17.2.0
 contexttimer                           # https://github.com/brouberol/contexttimer, ==0.3.3
 pandas
-
+boto3 
 # ADS plugins and libraries
 # ------------------------------------------------------------------------------
 # https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip
