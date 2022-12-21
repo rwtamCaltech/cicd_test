@@ -32,6 +32,7 @@ pytz==2019.1                                  # https://github.com/stub42/pytz
 sentry-sdk==0.7.14                            # https://github.com/getsentry/sentry-python
 structlog                             # https://github.com/hynek/structlog ==17.2.0
 contexttimer                           # https://github.com/brouberol/contexttimer, ==0.3.3
+pandas
 
 # ADS plugins and libraries
 # ------------------------------------------------------------------------------
