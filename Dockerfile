@@ -13,9 +13,10 @@
 
 
 #USED NOW FOR THE QUAKES2AWS DB interface 
-# FROM python:3  #OLDER WHICH WORKS
+FROM python:3  
+#OLDER WHICH WORKS
 # FROM python:3.7.6-buster  #DOES NOT WORK
-FROM python:3.8-alpine 
+# FROM python:3.8-alpine 
 RUN apk --update add gcc build-base freetype-dev libpng-dev openblas-dev
 #above is for python3.8 only
 # Set application working directory
