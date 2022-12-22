@@ -13,7 +13,8 @@
 
 
 #USED NOW FOR THE QUAKES2AWS DB interface 
-FROM python:3
+# FROM python:3  #OLDER WHICH WORKS
+FROM python:3.7.6-buster
 # Set application working directory
 WORKDIR /usr/src/app
 COPY common-layer/dependencies /tmp/dependencies 

@@ -74,18 +74,24 @@ def returnBackwardsString(random_string):
 @timeout(2)
 def connect_db(connection):
     with connection.cursor() as cursor:
-        #https://stackoverflow.com/questions/67678201/how-to-specify-timeout-for-a-query-using-django
-        # cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
-        cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
+        cursor.execute('\conninfo') 
         row = cursor.fetchall() 
-        # cursor.close()
-    
-    with connection.cursor() as cursorTwo:
-        cursorTwo.execute("SELECT pg_size_pretty( pg_total_relation_size('sample_set') );")
-        rowTwo= cursorTwo.fetchall() 
-        # cursorTwo.close()
+        cursor.close()
+    return row
 
-    return row,rowTwo
+    # with connection.cursor() as cursor:
+    #     #https://stackoverflow.com/questions/67678201/how-to-specify-timeout-for-a-query-using-django
+    #     # cursor.execute("SET statement_timeout = 2;") #set statement timeout here, see if it can set the timeout to 2 seconds here
+    #     cursor.execute('SELECT endtime FROM sample_set ORDER BY "id" DESC LIMIT 1;') 
+    #     row = cursor.fetchall() 
+    #     # cursor.close()
+    
+    # with connection.cursor() as cursorTwo:
+    #     cursorTwo.execute("SELECT pg_size_pretty( pg_total_relation_size('sample_set') );")
+    #     rowTwo= cursorTwo.fetchall() 
+    #     # cursorTwo.close()
+
+    # return row,rowTwo
 
 class PickRun:
     """
@@ -131,6 +137,20 @@ class PickRun:
             now = datetime.now()
             time.sleep(1) #prev 8
             complete_list=[]
+
+            #RT Test (want to see if what the /conninfo is)
+            try:
+                row=connect_db(connection)
+                logger.info('connect_db.results', meessage=row)
+            except:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_exception(exc_type, exc_value, exc_traceback,
+                                        limit=2, file=sys.stdout)
+
+                logger.info(
+                    'error.connect_db.results',
+                    error_message=str(traceback.format_exc())
+                )
 
             with Timer() as self.run_time:
                 with Timer() as batch_time:
@@ -357,7 +377,7 @@ class PickRunner:
         logger.info('picker.boot')
 
         self.binsize = 30 
-        self.PICKER_DELAY_SECONDS=90 #use default here, how far behind we pull data for picks
+        self.PICKER_DELAY_SECONDS=2 #use default here, how far behind we pull data for picks, prev 90
         self.PICKER_SAMPLING_RATE_FILTER=100.0 #only do picks on channels with this sampling rate
         # PICKER_DELAY_SECONDS = env.int('PICKER_DELAY_SECONDS', default=90)
 
