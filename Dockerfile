@@ -16,6 +16,8 @@
 # FROM python:3  #OLDER WHICH WORKS
 # FROM python:3.7.6-buster  #DOES NOT WORK
 FROM python:3.8-alpine 
+RUN apk --update add gcc build-base freetype-dev libpng-dev openblas-dev
+#above is for python3.8 only
 # Set application working directory
 WORKDIR /usr/src/app
 COPY common-layer/dependencies /tmp/dependencies 
@@ -34,6 +36,7 @@ ENV ARCHIVE_TO_S3="True"
 # Install requirements
 COPY requirements.txt ./
 RUN pip install --upgrade pip 
+RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install /tmp/djangoItems/django-djunk-0.32.1.zip
 RUN pip install /tmp/djangoItems/ads-extras-0.2.2.zip
