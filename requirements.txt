@@ -34,6 +34,7 @@ structlog                             # https://github.com/hynek/structlog ==17.
 contexttimer                           # https://github.com/brouberol/contexttimer, ==0.3.3
 pandas
 boto3 
+botocore  #for credentials to be recognized by boto3?
 # ADS plugins and libraries
 # ------------------------------------------------------------------------------
 # https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip

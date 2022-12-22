@@ -31,6 +31,7 @@ ENV ARCHIVE_TO_S3="True"
 
 # Install requirements
 COPY requirements.txt ./
+RUN pip install --upgrade pip 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install /tmp/djangoItems/django-djunk-0.32.1.zip
 RUN pip install /tmp/djangoItems/ads-extras-0.2.2.zip
