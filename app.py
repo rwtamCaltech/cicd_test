@@ -138,19 +138,19 @@ class PickRun:
             time.sleep(1) #prev 8
             complete_list=[]
 
-            #RT Test (want to see if what the /conninfo is)
-            try:
-                row=connect_db(connection)
-                logger.info('connect_db.results', meessage=row)
-            except:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_exception(exc_type, exc_value, exc_traceback,
-                                        limit=2, file=sys.stdout)
+            #RT Test (want to see if what the /conninfo is); NO NEED! Verified this is reading off Aurora DB (12/22/22)
+            # try:
+            #     row=connect_db(connection)
+            #     logger.info('connect_db.results', meessage=row)
+            # except:
+            #     exc_type, exc_value, exc_traceback = sys.exc_info()
+            #     traceback.print_exception(exc_type, exc_value, exc_traceback,
+            #                             limit=2, file=sys.stdout)
 
-                logger.info(
-                    'error.connect_db.results',
-                    error_message=str(traceback.format_exc())
-                )
+            #     logger.info(
+            #         'error.connect_db.results',
+            #         error_message=str(traceback.format_exc())
+            #     )
 
             with Timer() as self.run_time:
                 with Timer() as batch_time:
