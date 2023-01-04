@@ -27,7 +27,8 @@ COPY djangoItems /tmp/djangoItems
 #set environment variables to define the DB; these were previously set in our lambda function, and would help to establish a connection
 # ENV DB_HOST="quakes2aws.c5te7lavw4oy.us-west-2.rds.amazonaws.com"
 # ENV DB_HOST="aurora-cluster1.c5te7lavw4oy.us-west-2.rds.amazonaws.com"
-ENV DB_HOST='quakes2awsreadreplica.c5te7lavw4oy.us-west-2.rds.amazonaws.com' 
+ENV DB_HOST='aurora-cluster1-cluster.cluster-ro-c5te7lavw4oy.us-west-2.rds.amazonaws.com'
+# ENV DB_HOST='quakes2awsreadreplica.c5te7lavw4oy.us-west-2.rds.amazonaws.com' 
 ENV DB_NAME="datastore_test"
 ENV DB_PASSWORD="alsdfkj0932ljafds"
 ENV DB_USER="datastore_test_u"
