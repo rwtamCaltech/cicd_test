@@ -49,7 +49,7 @@ RUN find . -name "*.pyc" -delete
 #to avoid bad magic number errors? https://stackoverflow.com/questions/514371/whats-the-bad-magic-number-error
 
 # Install application
-COPY app.py ./
+COPY app.py Constant.py QueryExample.py ./
 COPY timeout.py ./
 # Run application
 CMD python app.py
