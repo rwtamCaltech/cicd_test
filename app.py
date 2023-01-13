@@ -26,6 +26,9 @@ import zipfile
 import boto3
 import json
 
+#We are testing a unit test area:
+from flask import Flask
+app = Flask(__name__)
 
 #Did a test where after the client is first loaded, it should be much faster to run continuously and ingest data back. 
 session = boto3.Session()
@@ -35,6 +38,13 @@ query_example = QueryExample(query_client)
 # Initialize Logger
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
+
+
+@app.route('/<random_string>')
+def returnBackwardsString(random_string):
+    """Reverse and return the provided URI"""
+    LOGGER.info('Received a message: %s', random_string)
+    return "".join(reversed(random_string))
 
 
 class PickRun:
