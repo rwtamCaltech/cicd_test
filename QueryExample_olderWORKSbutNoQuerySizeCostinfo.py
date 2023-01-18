@@ -1,4 +1,4 @@
-from Constant import DATABASE_NAME, TABLE_NAME, ONE_GB_IN_BYTES, QUERY_COST_PER_GB_IN_DOLLARS
+from Constant import DATABASE_NAME, TABLE_NAME, ONE_GB_IN_BYTES
 from contexttimer import Timer
 from quakes2aws_datastore.logging import logger  # noqa:E402
 
@@ -62,24 +62,16 @@ class QueryExample:
             Similar prob to this: https://github.com/aws/aws-sdk-pandas/issues/1308
             '''
             with Timer() as paginate_time:
-                gbytes_scanned_tot=0
-                gbytes_metered_tot=0
-                cost_for_query=0
-
                 for page in page_iterator: 
-                    query_status = page["QueryStatus"]
+                    # query_status = page["QueryStatus"]
 
                     # progress_percentage = query_status["ProgressPercentage"]
                     # print(f"Query progress so far: {progress_percentage}%")
 
-                    gigabytes_scanned = float(query_status["CumulativeBytesScanned"]) / ONE_GB_IN_BYTES
-                    gbytes_scanned_tot+=gigabytes_scanned 
+                    # bytes_scanned = float(query_status["CumulativeBytesScanned"]) / ONE_GB_IN_BYTES
                     # print(f"Data scanned so far: {bytes_scanned} GB")
 
-                    gigabytes_metered = float(query_status["CumulativeBytesMetered"]) / ONE_GB_IN_BYTES
-                    cost_added=gigabytes_metered*QUERY_COST_PER_GB_IN_DOLLARS
-                    gbytes_metered_tot+=gigabytes_metered
-                    cost_for_query+=cost_added
+                    # bytes_metered = float(query_status["CumulativeBytesMetered"]) / ONE_GB_IN_BYTES
                     # print(f"Data metered so far: {bytes_metered} GB")
 
                     column_info = page['ColumnInfo'] 
@@ -123,7 +115,7 @@ class QueryExample:
             # paginate_time_elapsed=round(paginate_time.elapsed,3)
             # print("Time to run a page section")
             # print(paginate_time_elapsed)
-            return all_query_results,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query #return all desired results
+            return all_query_results #return all desired results
         except Exception as err:
             logger.info('maxtime_query.exception',error=str(err))
             return 0

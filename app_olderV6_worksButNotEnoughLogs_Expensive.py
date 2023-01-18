@@ -53,11 +53,10 @@ class PickRun:
 
     Ryan notes; took out fn: def mark_sets_as_processed(self, set_ids); don't think we use them.
     """
-    # def __init__(self, starttime, min_starttime,binsize, samprate, present_time,mark_as_processed=True):
-    def __init__(self, starttime,binsize, samprate, present_time,mark_as_processed=True):
+    def __init__(self, starttime, min_starttime,binsize, samprate, present_time,mark_as_processed=True):
         # self.state = state
         self.starttime = starttime
-        # self.min_starttime=min_starttime
+        self.min_starttime=min_starttime
         self.binsize = binsize
         self.samprate = samprate
         self.present_time=present_time
@@ -74,7 +73,7 @@ class PickRun:
         try:
             #We pass in the starttime and endtime values to PickRun to get the latest times there
             endtime = self.starttime
-            # earliesttime = self.min_starttime #RT 1/17/23 DON'T NEED THIS, just reduce number of queries to save hits
+            earliesttime = self.min_starttime
             # endtime = self.state.endtime
             # earliesttime = self.state.starttime
 
@@ -98,7 +97,7 @@ class PickRun:
                     query_specified=f"""
                         SELECT * FROM devops_rt.host_metrics_rt WHERE (measure_value::double>"""+str(initial_starttime)+""" AND measure_value::double<"""+str(final_starttime)+""")
                     """
-                    all_query_results,gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty=query_example.run_rt_query(query_specified)
+                    all_query_results=query_example.run_rt_query(query_specified)
                     # sets = self.batch() 
                 
                 #At this point, we see if we have results
@@ -258,38 +257,20 @@ class PickRun:
                     #Get all global elapsed times to this point (testing)
                     batch_time_elapsed=round(batch_time.elapsed,3)
 
-                    # logger.info(
-                    #     'runtime.global.information',
-                    #     latestTS=str(endtime),
-                    #     earliestTS=str(earliesttime),
-                    #     presentTime=self.present_time,
-                    #     currentTS=str(self.starttime)
-                    # )
-
                     logger.info(
                         'runtime.global.information',
                         latestTS=str(endtime),
+                        earliestTS=str(earliesttime),
                         presentTime=self.present_time,
                         currentTS=str(self.starttime)
                     )
 
-                    # logger.info(
-                    #     'runtime.global.results',
-                    #     total_process_time=alltime_elapsed,
-                    #     batch_time=batch_time_elapsed,
-                    #     state=state
-                    # )
-                    #1/17/23 RT update: Want to add the querying information: gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty
                     logger.info(
                         'runtime.global.results',
                         total_process_time=alltime_elapsed,
                         batch_time=batch_time_elapsed,
-                        batch_gbytes_scanned=gbytes_scanned_thirty,
-                        batch_gbytes_metered=gbytes_metered_thirty,
-                        batch_query_cost=cost_for_query_thirty,
                         state=state
                     )
-
                 else: #if we exceed the boundaries of the DB, catch up to it
                     state = 'no-data'
                     print("No sets")
@@ -324,9 +305,9 @@ class PickRunner:
         #Ryan (we won't need State)
         # self.state = State(live=live)
         #We will call a function to get the maximum starttime at the moment
-        max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=self.__find_maxstarttime()
+        max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
 
-        logger.info('max_timestream.query', query_time_elapsed=record_maxtime_seismicquery_time_elapsed,max_starttime=max_starttime,gbytes_scanned=gbytes_scanned_tot,gbytes_metered=gbytes_metered_tot,query_cost=cost_for_query)
+        logger.info('max_timestream.query', query_time_elapsed=record_maxtime_seismicquery_time_elapsed,max_starttime=max_starttime)
         logger.info('picker.boot')
 
         self.binsize = 30 
@@ -352,17 +333,12 @@ class PickRunner:
 
 
     def __find_maxstarttime(self):
-        # query_specified_maxtime=f"""
-        #     SELECT MAX(measure_value::double) FROM devops_rt.host_metrics_rt
-        # """
-
-        #Get the latest data, so we can reduce the query space for this 
         query_specified_maxtime=f"""
-            SELECT MAX(measure_value::double) FROM devops_rt.host_metrics_rt WHERE time between ago(1m) and now() 
+            SELECT MAX(measure_value::double) FROM devops_rt.host_metrics_rt
         """
 
         with Timer() as record_maxtime_seismicquery_time:
-            all_query_results,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=query_example.run_rt_query(query_specified_maxtime)
+            all_query_results=query_example.run_rt_query(query_specified_maxtime)
 
             for result in all_query_results:
                 try:
@@ -372,20 +348,16 @@ class PickRunner:
                 break
 
         record_maxtime_seismicquery_time_elapsed=round(record_maxtime_seismicquery_time.elapsed,3)
-        return self.max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query #We will update the max_starttime each time we run this, so we ca reference it
+        return self.max_starttime, record_maxtime_seismicquery_time_elapsed #We will update the max_starttime each time we run this, so we ca reference it
 
 
     def __find_minstarttime(self):
-        # query_specified_maxtime=f"""
-        #     SELECT MIN(measure_value::double) FROM devops_rt.host_metrics_rt
-        # """
-
         query_specified_maxtime=f"""
-            SELECT MIN(measure_value::double) FROM devops_rt.host_metrics_rt WHERE time between ago(1m) and now()
+            SELECT MIN(measure_value::double) FROM devops_rt.host_metrics_rt
         """
 
         with Timer() as record_mintime_seismicquery_time:
-            all_query_results,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=query_example.run_rt_query(query_specified_maxtime)
+            all_query_results=query_example.run_rt_query(query_specified_maxtime)
 
             for result in all_query_results:
                 try:
@@ -395,7 +367,7 @@ class PickRunner:
                 break
 
         record_mintime_seismicquery_time_elapsed=round(record_mintime_seismicquery_time.elapsed,3)
-        return self.min_starttime, record_mintime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query #We will update the max_starttime each time we run this, so we ca reference it
+        return self.min_starttime, record_mintime_seismicquery_time_elapsed #We will update the max_starttime each time we run this, so we ca reference it
 
     def __guess_starttime(self):
         starttime = time.time() - self.PICKER_DELAY_SECONDS - self.binsize
@@ -415,7 +387,7 @@ class PickRunner:
         wanted_starttime = self.__guess_starttime() #this will get the current time, so if our current time is somehow less than our sample, we get the bellow
         
         #Get the minimum starttime here if needed
-        min_starttime, _, _, _, _=self.__find_minstarttime()
+        min_starttime, _=self.__find_minstarttime()
         oldest_sample = min_starttime
         # oldest_sample = self.state.starttime
 
@@ -432,7 +404,7 @@ class PickRunner:
             wanted_starttime = self.__guess_starttime()
 
             #Get the minimum starttime here if needed
-            min_starttime, _, _, _, _=self.__find_minstarttime()
+            min_starttime, _=self.__find_minstarttime()
             oldest_sample = min_starttime
             # oldest_sample = self.state.starttime
 
@@ -471,16 +443,13 @@ class PickRunner:
             starting_format = now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-7]
             present_time=starting_format
 
-            max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot_max,gbytes_metered_tot_max,cost_for_query_max=self.__find_maxstarttime()
-            # min_starttime, record_mintime_seismicquery_time_elapsed,gbytes_scanned_tot_min,gbytes_metered_tot_min,cost_for_query_min=self.__find_minstarttime()
-            tot_query_elapsed=record_maxtime_seismicquery_time_elapsed
-            gbytes_scanned_all=gbytes_scanned_tot_max
-            gbytes_metered_all=gbytes_metered_tot_max
-            cost_for_query_all=cost_for_query_max
+            max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
+            min_starttime, record_mintime_seismicquery_time_elapsed=self.__find_minstarttime()
+            tot_query_elapsed=record_maxtime_seismicquery_time_elapsed+record_mintime_seismicquery_time_elapsed
 
             #Recall that start_time_used is starttime = time.time() - self.PICKER_DELAY_SECONDS - self.binsize, so based off the current time we are running.
             #However, we only increment this start time if we get to the beginningOfNewJob, so we need to store new data continuously.
-            logger.info('monitor_initial', currentTS=start_time_used, latestTS=max_starttime,stubValue=self.__stub, query_time_elapsed=tot_query_elapsed,gbytes_scanned=gbytes_scanned_all,gbytes_metered=gbytes_metered_all,cost_query=cost_for_query_all)
+            logger.info('monitor_initial', currentTS=start_time_used, latestTS=max_starttime,stubValue=self.__stub, query_maxmintime_elapsed=tot_query_elapsed)
 
             # if start_time_used<=self.state.endtime or self.state.endtime != self.__stub:
             if start_time_used<=max_starttime or max_starttime != self.__stub:
@@ -494,6 +463,7 @@ class PickRunner:
 
                 run_time = PickRun(
                     self.max_starttime,
+                    self.min_starttime,
                     self.binsize,
                     self.samprate,
                     present_time,
