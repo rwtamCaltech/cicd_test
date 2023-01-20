@@ -172,7 +172,6 @@ class PickRun:
                     with Timer() as process_stations_time:
                         complete_list=[]
                         counter=0
-                        channel_breakdown_station_list=[]
 
                         for _, row in df_candidates.iterrows():
                             with Timer() as filtering_stations_time:
@@ -188,7 +187,6 @@ class PickRun:
                                 data_used_final = df_complete
                                 data_used_final_sorted=data_used_final.sort_values(by=['station', 'network','channel','startt'])
                                 complete_list.append(data_used_final_sorted) #append dataframes
-                                channel_breakdown_station_list.append(row['inst'])
                                 counter+=1
                         
                         number_of_stations=len(complete_list)
@@ -235,24 +233,6 @@ class PickRun:
                             s3_output_file=s3_output_file_root+counter_used
                             s3.upload_to_s3(desired_zip_file, s3_output_file) #will also call the S3 bucket GPD_PickLog with the specific timestamps as well
 
-
-                    with Timer() as get_unique_channels_time:
-                        unique_channels_found=list(set(channel_breakdown_station_list))
-                        unique_station_str=''
-                        count_unique_station_str=''
-                        for index, unique_channel in enumerate(unique_channels_found):
-                            spec_channel_count=channel_breakdown_station_list.count(unique_channel)
-
-                            if index!=len(unique_channels_found)-1: #not at the end of the list
-                                unique_channel_mod=unique_channel+','
-                                spec_channel_mod=str(spec_channel_count)+','
-                            else: #end of the list
-                                unique_channel_mod=unique_channel
-                                spec_channel_mod=str(spec_channel_count)
-                            
-                            unique_station_str+=unique_channel_mod
-                            count_unique_station_str+=spec_channel_mod
-
                     good_instrument_ratio=str(goodinstruments_counter)+'/'+str(totalinstruments_counter)
 
                     #Below are timing subsets of the entire runtime
@@ -261,8 +241,6 @@ class PickRun:
                     filtering_stations_time_elapsed=round(filtering_stations_time.elapsed,3)
                     chunk_data_elapsed=round(chunk_data.elapsed,3)
                     aggregate_time_elapsed=round(aggregate_time.elapsed,3)
-                    get_unique_channels_time_elapsed=round(get_unique_channels_time.elapsed,3)
-
 
                     logger.info(
                         'runtime.subset.results',
@@ -292,10 +270,7 @@ class PickRun:
                         'runtime.global.information',
                         latestTS=str(endtime),
                         presentTime=self.present_time,
-                        currentTS=str(self.starttime),
-                        uniqueStations_process_time=get_unique_channels_time_elapsed,
-                        channelsFound=unique_station_str,
-                        channelsNumberOfEach=count_unique_station_str
+                        currentTS=str(self.starttime)
                     )
 
                     # logger.info(
