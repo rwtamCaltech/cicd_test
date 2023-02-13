@@ -278,10 +278,10 @@ class PickRun:
                             'station.match.results',
                             ourstation_foundellen_global_list=str(station_match_with_text),
                             ourstation_notfoundellen_global_list=str(station_nomatch_with_text),
-                            ourstation_foundq330_global_list=str(countmatchq_stations[0]),
-                            ourstation_notfoundq330_global_list=str(countnomatchq_stations[0]),
-                            ourstation_foundNonq330_global_list=str(countmatchq_stations[1]),
-                            ourstation_notfoundNonq330_global_list=str(countnomatchq_stations[1]),
+                            ourstation_foundq330_global_list=str(matchq_stations[0]),
+                            ourstation_notfoundq330_global_list=str(nomatchq_stations[0]),
+                            ourstation_foundNonq330_global_list=str(matchq_stations[1]),
+                            ourstation_notfoundNonq330_global_list=str(nomatchq_stations[1]),
                             weiqiangRidgecrest_found_global_list=str(weiqiang_station_found_list),
                             weiqiangRidgecrest_notfound_global_list=str(weiqiang_station_notfound_list)
                         )
@@ -291,10 +291,10 @@ class PickRun:
                             'station.match.count.results',
                             ourstation_foundellen_global_list=str(len(station_match_with_text)),
                             ourstation_notfoundellen_global_list=str(len(station_nomatch_with_text)),
-                            ourstation_foundq330_global_list=str(len(countmatchq_stations[0])),
-                            ourstation_notfoundq330_global_list=str(len(countnomatchq_stations[0])),
-                            ourstation_foundNonq330_global_list=str(len(countmatchq_stations[1])),
-                            ourstation_notfoundNonq330_global_list=str(len(countnomatchq_stations[1])),
+                            ourstation_foundq330_global_list=str(countmatchq_stations[0]),
+                            ourstation_notfoundq330_global_list=str(countnomatchq_stations[0]),
+                            ourstation_foundNonq330_global_list=str(countmatchq_stations[1]),
+                            ourstation_notfoundNonq330_global_list=str(countnomatchq_stations[1]),
                             weiqiangRidgecrest_found_global_list=str(len(weiqiang_station_found_list)),
                             weiqiangRidgecrest_notfound_global_list=str(len(weiqiang_station_notfound_list))
                         )
