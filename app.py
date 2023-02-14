@@ -206,14 +206,14 @@ class PickRun:
                         text_file='active_RT_primary_chan.txt'
                         df = pd.read_fwf(text_file, colspecs='infer')
                         df["Period"] = df['NET']+"."+ df["STA"]+"."+ df["SEE"].astype(str).str[:2] #This gets the aggregations we desire
-                        station_match_with_text=[]
-                        station_nomatch_with_text=[]
+                        station_match_with_Ellentext=[]
+                        station_nomatch_with_Ellentext=[]
 
                         for station_set in all_stationsets_acquired:
                             if station_set in df["Period"].tolist():
-                                station_match_with_text.append(station_set)
+                                station_match_with_Ellentext.append(station_set)
                             else:
-                                station_nomatch_with_text.append(station_set)
+                                station_nomatch_with_Ellentext.append(station_set)
 
                         #STEP 2: COMPARE OUR ANTARCTIC Q330s, and see what stations we get back here (MORE DIRECT TO THE DATA WE ARE FUNNELING OUT)
                         #STEP 3: Also will get the nonq330s, but code is written a similar way so in for loop
@@ -265,9 +265,12 @@ class PickRun:
                         df_station[['net','stat','extra','chan']] = df_station.station.str.split(".",expand=True)
                         df_station['tot'] = df_station["net"]+"."+ df_station['stat']+"."+df_station['chan'] #51 stations, now omitting the ones with 2C in front of the channels
 
+                        #RT 2.14.23 UPDATE: Weiqiang's stations sometimes has a sta.net.2c.channel, leading to duplicates bc of the 2c; get rid of this
+                        df_station['tot']=df_station['tot'].drop_duplicates()
+
                         weiqiang_station_found_list=[]
                         weiqiang_station_notfound_list=[]
-                        for weiqiang_stations in df_station['tot'].tolist():
+                        for weiqiang_stations in df_station['tot'].dropna().tolist(): #2/14/23 RT -->added the dropna() to get the unique stations from Weiqiang's only
                             if weiqiang_stations in all_stationsets_acquired:
                                 weiqiang_station_found_list.append(weiqiang_stations)
                             else:
@@ -276,8 +279,8 @@ class PickRun:
                         #LOOKS LIKE ALL THE DATA IS SORTED, so no need: all_stationsets_acquired.sort()
                         logger.info(
                             'station.match.results',
-                            ourstation_foundellen_global_list=str(station_match_with_text),
-                            ourstation_notfoundellen_global_list=str(station_nomatch_with_text),
+                            ourstation_foundellen_global_list=str(station_match_with_Ellentext),
+                            ourstation_notfoundellen_global_list=str(station_nomatch_with_Ellentext),
                             ourstation_foundq330_global_list=str(matchq_stations[0]),
                             ourstation_notfoundq330_global_list=str(nomatchq_stations[0]),
                             ourstation_foundNonq330_global_list=str(matchq_stations[1]),
@@ -289,8 +292,8 @@ class PickRun:
 
                         logger.info(
                             'station.match.count.results',
-                            ourstation_foundellen_global_list=str(len(station_match_with_text)),
-                            ourstation_notfoundellen_global_list=str(len(station_nomatch_with_text)),
+                            ourstation_foundellen_global_list=str(len(station_match_with_Ellentext)),
+                            ourstation_notfoundellen_global_list=str(len(station_nomatch_with_Ellentext)),
                             ourstation_foundq330_global_list=str(countmatchq_stations[0]),
                             ourstation_notfoundq330_global_list=str(countnomatchq_stations[0]),
                             ourstation_foundNonq330_global_list=str(countmatchq_stations[1]),
