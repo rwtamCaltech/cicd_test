@@ -174,9 +174,6 @@ class PickRun:
                         counter=0
                         channel_breakdown_station_list=[]
 
-                        #RT 2/13/23 ADD: 
-                        all_stationsets_acquired=[]
-
                         for _, row in df_candidates.iterrows():
                             with Timer() as filtering_stations_time:
                                 totalinstruments_counter+=1
@@ -192,116 +189,8 @@ class PickRun:
                                 data_used_final_sorted=data_used_final.sort_values(by=['station', 'network','channel','startt'])
                                 complete_list.append(data_used_final_sorted) #append dataframes
                                 channel_breakdown_station_list.append(row['inst'])
-
-                                #RT 2/13/23 ADD: 
-                                all_stationsets_acquired.append(row['network']+'.'+row['station']+'.'+row['inst'])
-
                                 counter+=1
                         
-                        #RT 2/13/23 ADD; as part of the process_stations, we will also make comparisons with all the stations we get at that 30-second increment:
-                        #GUIDANCE FROM: ryanTests\stationMonitoring.py
-                        all_stationsets_acquired.sort()
-
-                        #STEP 1: COMPARE TO ELLEN'S GLOBAL/LATEST STATION DATA FIRST. 
-                        text_file='active_RT_primary_chan.txt'
-                        df = pd.read_fwf(text_file, colspecs='infer')
-                        df["Period"] = df['NET']+"."+ df["STA"]+"."+ df["SEE"].astype(str).str[:2] #This gets the aggregations we desire
-                        station_match_with_Ellentext=[]
-                        station_nomatch_with_Ellentext=[]
-
-                        for station_set in all_stationsets_acquired:
-                            if station_set in df["Period"].tolist():
-                                station_match_with_Ellentext.append(station_set)
-                            else:
-                                station_nomatch_with_Ellentext.append(station_set)
-
-                        #STEP 2: COMPARE OUR ANTARCTIC Q330s, and see what stations we get back here (MORE DIRECT TO THE DATA WE ARE FUNNELING OUT)
-                        #STEP 3: Also will get the nonq330s, but code is written a similar way so in for loop
-                        q330_antarctic='antarctic_q330.txt'
-                        nonq330_antarctic='antarctic_nonq330.txt'
-
-                        station_list=[q330_antarctic,nonq330_antarctic]
-                        countmatchq_stations=[]
-                        countnomatchq_stations=[]
-                        matchq_stations=[]
-                        nomatchq_stations=[]
-
-                        for station_items in station_list:
-                            # print("For stations: "+station_items)
-                            df_station = pd.read_fwf(station_items, colspecs='infer',header=None)
-                            df_station = df_station.drop(2, axis=1).join(df_station[2].str.split(expand=True), rsuffix='_x')
-
-                            df_channel_sep = pd.DataFrame([ x.split(',') for x in df_station[4].tolist() ])
-                            num_columns=len(df_channel_sep.columns)
-
-                            newDF = pd.DataFrame()
-
-                            for i in range(num_columns):
-                                df_series = df_station["1"]+"."+ df_station['0_x']+"."+df_channel_sep[i].astype(str).str[:2]
-                                df_used=df_series.to_frame()
-                                newDF=newDF.append(df_used,ignore_index = True)
-
-                            allq330_stations=newDF.dropna()
-                            station_match_with_text=[]
-                            station_nomatch_with_text=[]
-
-                            for station_set in all_stationsets_acquired:
-                                if station_set in allq330_stations[0].tolist():
-                                    station_match_with_text.append(station_set)
-                                else:
-                                    station_nomatch_with_text.append(station_set)
-
-                            #Now we can see which stations match what we have in the list.
-                            countmatchq_stations.append(len(station_match_with_text))
-                            countnomatchq_stations.append(len(station_nomatch_with_text))
-                            matchq_stations.append(station_match_with_text)
-                            nomatchq_stations.append(station_nomatch_with_text)
-
-
-                        #STEP 4: LIST OF WEIQIANG'S STATIONS THAT HE USED FOR RIDGECREST ANALYSIS (so we can see if we can have an apples-to-apples comparison based on the stations he's using)
-                        #Do from Weiqiang's perspective; see what stations from his file that we are missing, at any given time. 
-                        Weiqiang_Ridgecrest_stations='stations_Weiqiang_Ridgecrest.csv'
-                        df_station=pd.read_csv(Weiqiang_Ridgecrest_stations,sep='\t') #52 columns; Weiqiang relied on 52 stations to make his predictions and get results back. 
-                        df_station[['net','stat','extra','chan']] = df_station.station.str.split(".",expand=True)
-                        df_station['tot'] = df_station["net"]+"."+ df_station['stat']+"."+df_station['chan'] #51 stations, now omitting the ones with 2C in front of the channels
-
-                        #RT 2.14.23 UPDATE: Weiqiang's stations sometimes has a sta.net.2c.channel, leading to duplicates bc of the 2c; get rid of this
-                        df_station['tot']=df_station['tot'].drop_duplicates()
-
-                        weiqiang_station_found_list=[]
-                        weiqiang_station_notfound_list=[]
-                        for weiqiang_stations in df_station['tot'].dropna().tolist(): #2/14/23 RT -->added the dropna() to get the unique stations from Weiqiang's only
-                            if weiqiang_stations in all_stationsets_acquired:
-                                weiqiang_station_found_list.append(weiqiang_stations)
-                            else:
-                                weiqiang_station_notfound_list.append(weiqiang_stations)
-
-                        #LOOKS LIKE ALL THE DATA IS SORTED, so no need: all_stationsets_acquired.sort()
-                        logger.info(
-                            'station.match.results',
-                            ourstation_foundellen_global_list=str(station_match_with_Ellentext),
-                            ourstation_notfoundellen_global_list=str(station_nomatch_with_Ellentext),
-                            ourstation_foundq330_global_list=str(matchq_stations[0]),
-                            ourstation_notfoundq330_global_list=str(nomatchq_stations[0]),
-                            ourstation_foundNonq330_global_list=str(matchq_stations[1]),
-                            ourstation_notfoundNonq330_global_list=str(nomatchq_stations[1]),
-                            weiqiangRidgecrest_found_global_list=str(weiqiang_station_found_list),
-                            weiqiangRidgecrest_notfound_global_list=str(weiqiang_station_notfound_list)
-                        )
-
-
-                        logger.info(
-                            'station.match.count.results',
-                            ourstation_foundellen_global_list=str(len(station_match_with_Ellentext)),
-                            ourstation_notfoundellen_global_list=str(len(station_nomatch_with_Ellentext)),
-                            ourstation_foundq330_global_list=str(countmatchq_stations[0]),
-                            ourstation_notfoundq330_global_list=str(countnomatchq_stations[0]),
-                            ourstation_foundNonq330_global_list=str(countmatchq_stations[1]),
-                            ourstation_notfoundNonq330_global_list=str(countnomatchq_stations[1]),
-                            weiqiangRidgecrest_found_global_list=str(len(weiqiang_station_found_list)),
-                            weiqiangRidgecrest_notfound_global_list=str(len(weiqiang_station_notfound_list))
-                        )
-
                         number_of_stations=len(complete_list)
 
                         now = datetime.now() # current date and time
