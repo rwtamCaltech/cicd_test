@@ -26,12 +26,6 @@ import zipfile
 import boto3
 import json
 
-
-#multiprocessing avenues
-from multiprocessing import Process, Queue
-from math import ceil
-import multiprocessing 
-
 #We are testing a unit test area:
 from flask import Flask
 app = Flask(__name__)
@@ -75,33 +69,6 @@ class PickRun:
 
     def __finish(self, state='done'):
         logger.info('picker.run.finish')
-
-
-    def issue_request(self,subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,result_queue):
-        totalinstruments_counter=0
-        goodinstruments_counter=0
-
-        for combo in subset:
-            combo_split=combo.split('.')
-            network=combo_split[0]
-            station=combo_split[1]
-            inst=combo_split[2]
-
-            totalinstruments_counter+=1
-            df_complete=data_used[(data_used['station']==station) & (data_used['network']==network) & (data_used['inst']==inst)]
-            df_complete = df_complete.drop_duplicates(subset=['station','network','channel','startt']) #RT!!!! Had to get rid of extra duplicates here too. (but need to keep specific items)
-
-            if len(df_complete)==number_total_channels-3 or len(df_complete)==number_total_channels-6 or len(df_complete)==number_total_channels or len(df_complete)==number_total_channels+3 or len(df_complete)==number_total_channels+6:
-                goodinstruments_counter+=1
-                data_used_final = df_complete
-                data_used_final_sorted=data_used_final.sort_values(by=['station', 'network','channel','startt'])
-                complete_list.append(data_used_final_sorted) #append dataframes
-                channel_breakdown_station_list.append(inst)
-                # counter+=1
-        
-        #complete_list (and maybe channel_breakdown_station_list, for later; are the only things we want to return)
-        result_queue.put([complete_list,channel_breakdown_station_list,goodinstruments_counter,totalinstruments_counter])
-
     
     def run(self, test=False):
         try:
@@ -199,76 +166,38 @@ class PickRun:
                         #Very important (we are processing the last 30 seconds of data, and we get three channels for each station). So for each unique station combination
                         #we pick out, we expect 90 rows or thereabouts
                         number_total_channels=self.binsize*3
-                        totalinstruments_counter_ov=0
-                        goodinstruments_counter_ov=0
-
-                        #2/22/23 RT update: This is the start of the multiprocessing data we have
-                        #The goal is to compartmentalize all candidate stations to a list, and work off these instead, potentially:
-                        df_candidates['tot'] = df_candidates["network"]+"."+ df_candidates['station']+"."+df_candidates['inst']
-                        df_candidates_list=df_candidates['tot'].tolist()
-
-                        numOfCores = multiprocessing.cpu_count()
-
-                        if len(df_candidates_list) <= multiprocessing.cpu_count():
-                            # print("The number of events (", len(df_candidates_list),") < number of cores (", str(numOfCores),"), using all available cores (",str(numOfCores),") instead")
-                            numOfCores = len(df_candidates_list)
-
-                        num_processes_str="Dividing requests between", str(numOfCores), "process(es)"
-                        step  = ceil(len(df_candidates_list)/numOfCores) #if 8 processes, 4 steps for 26 events (so each core would take 4 steps)
-                        logger.info(
-                            'process.stations.div',
-                            num_cpu_cores_process=num_processes_str
-                        )
+                        totalinstruments_counter=0
+                        goodinstruments_counter=0
 
                     with Timer() as process_stations_time:
                         complete_list=[]
                         counter=0
                         channel_breakdown_station_list=[]
 
-                        #2/22/23 RT update: Multiprocessing thread, from ryanTests QueryRealTimeExModMProc.py; local testing revealed this cut processing time by 2.2x
-                        #let's see if that is what happens here
-                        start_index = 0
-                        end_index = step
-                        predict_workers=[]
-                        result_queue = Queue() 
+                        for _, row in df_candidates.iterrows():
+                            with Timer() as filtering_stations_time:
+                                totalinstruments_counter+=1
+                                df_complete=data_used[(data_used['station']==row['station']) & (data_used['network']==row['network']) & (data_used['inst']==row['inst'])]
+                                df_complete = df_complete.drop_duplicates(subset=['station','network','channel','startt']) #RT!!!! Had to get rid of extra duplicates here too. (but need to keep specific items)
 
-                        for i in range(0, numOfCores):
-                            subset=df_candidates_list[start_index:end_index]
-
-                            if not subset:
-                                break
-                            else:
-                                predict_worker=Process(target=self.issue_request, args=(subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,result_queue)) 
-                                predict_workers.append(predict_worker)
-                                predict_worker.start()
-
-                            start_index += step
-                            end_index += step
-
-                        results = [result_queue.get() for w in predict_workers]
-
-                        for w in predict_workers:
-                            w.join()
-
-                        complete_list_modded=[]
-                        channelbrk_list_modded=[]
-                        for result in results:
-                            prediction_items=result[0]
-                            inst_items=result[1]
-                            goodinstruments_counter=result[2]
-                            totalinstruments_counter=result[3]
-                            complete_list_modded.extend(prediction_items)
-                            channelbrk_list_modded.extend(inst_items)
-                            goodinstruments_counter_ov+=goodinstruments_counter
-                            totalinstruments_counter_ov+=totalinstruments_counter
-                                    
-                        number_of_stations=len(complete_list_modded)
+                            #if we have the right number of channels, we continue to process
+                            #we might get EH channels, those aren't enough to process; HH and HN are likely most common
+                            #7/2/21 RT note: sometimes we can get 17 seconds of data bc we did a +1; starttime + seconds + 1
+                            if len(df_complete)==number_total_channels-3 or len(df_complete)==number_total_channels-6 or len(df_complete)==number_total_channels or len(df_complete)==number_total_channels+3 or len(df_complete)==number_total_channels+6:
+                                goodinstruments_counter+=1
+                                data_used_final = df_complete
+                                data_used_final_sorted=data_used_final.sort_values(by=['station', 'network','channel','startt'])
+                                complete_list.append(data_used_final_sorted) #append dataframes
+                                channel_breakdown_station_list.append(row['inst'])
+                                counter+=1
+                        
+                        number_of_stations=len(complete_list)
 
                         now = datetime.now() # current date and time
                         time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
                         moddedList=[]
 
-                        for df in complete_list_modded:
+                        for df in complete_list:
                             time_str_dup = [time_str]*len(df['startt'])
                             num_stations = [number_of_stations]*len(df['startt'])
                             df.insert(loc=0, column='timestamp', value=time_str_dup)
@@ -324,23 +253,23 @@ class PickRun:
                             unique_station_str+=unique_channel_mod
                             count_unique_station_str+=spec_channel_mod
 
-                    good_instrument_ratio=str(goodinstruments_counter_ov)+'/'+str(totalinstruments_counter_ov)
+                    good_instrument_ratio=str(goodinstruments_counter)+'/'+str(totalinstruments_counter)
 
                     #Below are timing subsets of the entire runtime
                     get_stations_time_elapsed=round(get_stations_time.elapsed,3)
                     process_stations_time_elapsed=round(process_stations_time.elapsed,3)
-                    # filtering_stations_time_elapsed=round(filtering_stations_time.elapsed,3)
+                    filtering_stations_time_elapsed=round(filtering_stations_time.elapsed,3)
                     chunk_data_elapsed=round(chunk_data.elapsed,3)
                     aggregate_time_elapsed=round(aggregate_time.elapsed,3)
                     get_unique_channels_time_elapsed=round(get_unique_channels_time.elapsed,3)
 
 
-                    #filtering_stations_time=filtering_stations_time_elapsed, #DON'T NEED THIS (very fast anyway, will find out overhead with process_stations_time)
                     logger.info(
                         'runtime.subset.results',
                         good_instrument_ratio=good_instrument_ratio,
                         get_stations_time=get_stations_time_elapsed,
                         process_stations_time=process_stations_time_elapsed,
+                        filtering_stations_time=filtering_stations_time_elapsed,
                         subset_to55_time=chunk_data_elapsed,
                         number_zip_files=str(counterZip),
                         zip_fileToS3_time=aggregate_time_elapsed
@@ -377,7 +306,7 @@ class PickRun:
                     # )
                     #1/17/23 RT update: Want to add the querying information: gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty
                     logger.info(
-                        'runtime.globalquery.results',
+                        'runtime.global.results',
                         total_process_time=alltime_elapsed,
                         batch_time=batch_time_elapsed,
                         batch_gbytes_scanned=gbytes_scanned_thirty,
