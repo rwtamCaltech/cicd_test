@@ -220,6 +220,11 @@ class PickRun:
                             num_cpu_cores_process=num_processes_str
                         )
 
+                        logger.info(
+                            'all.candidate.waveform.stations',
+                            ourstation_foundellen_global_list=str(df_candidates_list)
+                        )
+
                     with Timer() as process_stations_time:
                         complete_list=[]
                         counter=0
