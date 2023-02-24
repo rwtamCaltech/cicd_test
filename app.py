@@ -77,7 +77,7 @@ class PickRun:
         logger.info('picker.run.finish')
 
 
-    def issue_request(self,subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,result_queue):
+    def issue_request(self,subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,missing_waveform_stations,result_queue):
         totalinstruments_counter=0
         goodinstruments_counter=0
 
@@ -98,9 +98,12 @@ class PickRun:
                 complete_list.append(data_used_final_sorted) #append dataframes
                 channel_breakdown_station_list.append(inst)
                 # counter+=1
+            else: #RT added 2/23/23 to see if we are missing any specific waveforms consistently in our runs
+                missing_waveform_stations.append(combo)
+
         
         #complete_list (and maybe channel_breakdown_station_list, for later; are the only things we want to return)
-        result_queue.put([complete_list,channel_breakdown_station_list,goodinstruments_counter,totalinstruments_counter])
+        result_queue.put([complete_list,channel_breakdown_station_list,goodinstruments_counter,totalinstruments_counter,missing_waveform_stations])
 
     
     def run(self, test=False):
@@ -220,15 +223,18 @@ class PickRun:
                             num_cpu_cores_process=num_processes_str
                         )
 
-                        logger.info(
-                            'all.candidate.waveform.stations',
-                            ourstation_foundellen_global_list=str(df_candidates_list)
-                        )
+
+                        #We don't want to print out all the waveform station candidates we have, there are too many
+                        # logger.info(
+                        #     'all.candidate.waveform.stations',
+                        #     ourstation_foundellen_global_list=str(df_candidates_list)
+                        # )
 
                     with Timer() as process_stations_time:
                         complete_list=[]
                         counter=0
                         channel_breakdown_station_list=[]
+                        missing_waveform_stations=[]
 
                         #2/22/23 RT update: Multiprocessing thread, from ryanTests QueryRealTimeExModMProc.py; local testing revealed this cut processing time by 2.2x
                         #let's see if that is what happens here
@@ -243,7 +249,7 @@ class PickRun:
                             if not subset:
                                 break
                             else:
-                                predict_worker=Process(target=self.issue_request, args=(subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,result_queue)) 
+                                predict_worker=Process(target=self.issue_request, args=(subset,data_used,number_total_channels,complete_list,channel_breakdown_station_list,missing_waveform_stations,result_queue)) 
                                 predict_workers.append(predict_worker)
                                 predict_worker.start()
 
@@ -257,15 +263,18 @@ class PickRun:
 
                         complete_list_modded=[]
                         channelbrk_list_modded=[]
+                        missing_waveform_totlist=[]
                         for result in results:
                             prediction_items=result[0]
                             inst_items=result[1]
                             goodinstruments_counter=result[2]
                             totalinstruments_counter=result[3]
+                            missing_waveform_stations_items=result[4]
                             complete_list_modded.extend(prediction_items)
                             channelbrk_list_modded.extend(inst_items)
                             goodinstruments_counter_ov+=goodinstruments_counter
                             totalinstruments_counter_ov+=totalinstruments_counter
+                            missing_waveform_totlist.extend(missing_waveform_stations_items)
                                     
                         number_of_stations=len(complete_list_modded)
 
@@ -312,12 +321,13 @@ class PickRun:
                             s3.upload_to_s3(desired_zip_file, s3_output_file) #will also call the S3 bucket GPD_PickLog with the specific timestamps as well
 
 
+                    #To get the unique stations, had to change to: channelbrk_list_modded
                     with Timer() as get_unique_channels_time:
-                        unique_channels_found=list(set(channel_breakdown_station_list))
+                        unique_channels_found=list(set(channelbrk_list_modded))
                         unique_station_str=''
                         count_unique_station_str=''
                         for index, unique_channel in enumerate(unique_channels_found):
-                            spec_channel_count=channel_breakdown_station_list.count(unique_channel)
+                            spec_channel_count=channelbrk_list_modded.count(unique_channel)
 
                             if index!=len(unique_channels_found)-1: #not at the end of the list
                                 unique_channel_mod=unique_channel+','
@@ -339,6 +349,14 @@ class PickRun:
                     aggregate_time_elapsed=round(aggregate_time.elapsed,3)
                     get_unique_channels_time_elapsed=round(get_unique_channels_time.elapsed,3)
 
+
+                    #2/23/23 RT: These print out the list of stations that do NOT have the three channels (and thus don't have picks).
+                    #If we consistently get stations in this list over many 30-second increments, then that station isn't fully emitting to its potential, and might
+                    #need to be debugged/flagged. Not my problem - likely a hardware side aspect. 
+                    logger.info(
+                        'waveform.nothreechannel.stations',
+                        waveform_nothreechannel_list=str(missing_waveform_totlist)
+                    )
 
                     #filtering_stations_time=filtering_stations_time_elapsed, #DON'T NEED THIS (very fast anyway, will find out overhead with process_stations_time)
                     logger.info(
