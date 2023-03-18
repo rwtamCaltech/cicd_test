@@ -377,7 +377,7 @@ class PickRun:
                         total_process_time=alltime_elapsed,
                         batch_time=batch_time_elapsed,
                         expire_time=expire_time_elapsed,
-                        access_memoryAfterExpire_time=memoryAtBegin_time_elapsed,
+                        access_memoryAtBeginning_time=memoryAtBegin_time_elapsed,
                         access_memoryAfterExpire_time=memoryAfterExpir_time_elapsed,
                         state=state
                     )
