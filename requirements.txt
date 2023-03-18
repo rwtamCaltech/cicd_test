@@ -35,6 +35,11 @@ contexttimer                           # https://github.com/brouberol/contexttim
 pandas
 boto3 
 botocore  #for credentials to be recognized by boto3?
+
+#3/16/23 REDIS interaction items
+redis-py-cluster
+
+
 # ADS plugins and libraries
 # ------------------------------------------------------------------------------
 # https://s3-us-west-2.amazonaws.com/imss-code-drop/django-djunk/django-djunk-0.32.1.zip

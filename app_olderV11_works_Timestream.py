@@ -25,27 +25,21 @@ from zipfile import ZipFile
 import zipfile
 import boto3
 import json
-import ast
+
 
 #multiprocessing avenues
 from multiprocessing import Process, Queue
 from math import ceil
 import multiprocessing 
 
-#REDIS used here
-from rediscluster import RedisCluster
-
-
 #We are testing a unit test area:
 from flask import Flask
 app = Flask(__name__)
 
 #Did a test where after the client is first loaded, it should be much faster to run continuously and ingest data back. 
-#3.16.23 UPDATE:
-redis = RedisCluster(startup_nodes=[{"host": "redis-cluster.1ge2d2.clustercfg.usw2.cache.amazonaws.com","port": "6379"}], decode_responses=True,skip_full_coverage_check=True)
-query_example = QueryExample(redis)
-# session = boto3.Session()
-# query_client = session.client('timestream-query')
+session = boto3.Session()
+query_client = session.client('timestream-query')
+query_example = QueryExample(query_client)
 
 # Initialize Logger
 LOGGER = logging.getLogger()
@@ -128,30 +122,70 @@ class PickRun:
 
             with Timer() as self.run_time:
                 with Timer() as batch_time:
-                    #3/17/23 RT: First thing I want to do is a memory check
-                    with Timer() as memoryAtBegin_time:
-                        string_memAtBegin=query_example.get_memory_usage()
-
-                    #3/17/23 RT UPDATE: (now we can run the querying of our data and see what we get here)
-                    #DERIVED from components\datastore\quakes2aws_datastore\core\models.py whwere our headfn helps; #RT No more self.batch()
-                    initial_starttime=endtime-self.binsize-5 #-6 at first, but let's try -5 here. 
+                    #RT No more self.batch()
+                    #DERIVED from components\datastore\quakes2aws_datastore\core\models.py whwere our headfn helps
+                    initial_starttime=endtime-self.binsize-6
                     final_starttime=endtime-5
 
-                    all_query_results=query_example.run_rt_query(initial_starttime,final_starttime)
+                    #STOPPED here. We will create a functiont that will allow us to query the data. This might be the real pain point, since
+                    #this query seems to take a while with local testing (relying on the Fargate instance being in same us-west-2 as Timestream DB
+                    # to make it faster, but not sure)
 
+                    query_specified=f"""
+                        SELECT * FROM devops_rt.host_metrics_rt WHERE (measure_value::double>"""+str(initial_starttime)+""" AND measure_value::double<"""+str(final_starttime)+""")
+                    """
+                    all_query_results,gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty=query_example.run_rt_query(query_specified)
+                    # sets = self.batch() 
+                
                 #At this point, we see if we have results
                 queried_results=len(all_query_results)
 
                 if queried_results!=0:
                     with Timer() as get_stations_time:
-                        #RT 3/17/23 I'm going to try a new technique instead of iterating across each query result.
-                        list_dicts=[ast.literal_eval(eq_query) for eq_query in all_query_results]
-                        data_used=pd.DataFrame(list_dicts) #very fast to cobble up a dataframe with all of our desired data
+                        #similar to reposRevLambV3, start aggregating the data here
+                        #components\datastore\quakes2aws_datastore\picker\tasks.py
+                        station_list=[]
+                        network_list=[]
+                        channel_list=[]
+                        location_list=[]
+                        samprate_list=[]
+                        startt_list=[]
+                        endt_list=[]
+                        data_list=[]
 
-                        #RT transform the 'data' to be list of lists of data, which is what we need 
-                        data_list = [json.loads(data_item) for data_item in data_used['data'].tolist()] #to convert the list of strings to a list of lists
-                        data_used['data']=data_list #replacing the data column values with the list values in this list
+                        for result in all_query_results:
+                            '''
+                            As an example:
+                            {'Startt': '1649776945', 'Station': 'PLM', 'CurrentTimestamp': '2022_04_12_15_27_30', 'ChannelAll': 'HNE', 'ChannelTwoBit': 'HN', 'Network': 'CI', 
+                            'Endt': '1649776946', 'SeismicDataOneSecArray': '[14296, 14301, 14298, 14301, 14297, 14297, 14301, 14300, 14300, 14297, 14293, 14298, 14303, 14306, 
+                            14296, 14290, 14296, 14303, 14305, 14293, 14298, 14300, 14300, 14300, 14293, 14297, 14305, 14305, 14298, 14294, 14299, 14304, 14303, 14297, 14295, 
+                            14300, 14299, 14299, 14299, 14298, 14298, 14304, 14298, 14295, 14301, 14301, 14304, 14298, 14296, 14297, 14299, 14304, 14298, 14294, 14299, 14302, 
+                            14301, 14297, 14297, 14299, 14300, 14305, 14296, 14293, 14299, 14304, 14303, 14298, 14297, 14300, 14302, 14298, 14298, 14301, 14299, 14297, 14301, 
+                            14298, 14295, 14295, 14301, 14302, 14295, 14299, 14300, 14300, 14303, 14298, 14295, 14301, 14297, 14301, 14299, 14296, 14299, 14294, 14304, 14302, 
+                            14292, 14297]', 'Location': '--', 'measure_name': 'SampRate', 'time': '2023-01-06 01:20:38.011000000', 'measure_value::double': '100.0'} 
+                            '''
+                            array_used=result['SeismicDataOneSecArray']
+                            array_datalist = json.loads(array_used) #converts to a list that we can read the numbers off of (these numbers are of type int); otherwise str
 
+                            station_list.append(result['Station'])
+                            network_list.append(result['Network'])
+                            channel_list.append(result['ChannelAll'])
+                            location_list.append(result['Location'])
+                            samprate_list.append(result['SampRate'])
+                            startt_list.append(int(float(result['measure_value::double']))) #had to convert to FLOAT, not int, since it was a str
+                            endt_list.append(int(float(result['Endt']))) #had to convert to float since it was a str
+                            data_list.append(array_datalist) #a list of lists
+                            #Perhaps add an error exception once we get to more rigorous testing
+
+                        data_used = pd.DataFrame(list(zip(station_list,network_list,channel_list, location_list, samprate_list,startt_list,endt_list,data_list)), 
+                                    columns =['station','network', 'channel', 'location', 'samprate','startt','endt','data']) 
+                        '''
+                        As an example below:
+                        station network channel  ...      startt        endt                                               data
+                        0     PLM      CI     HNE  ...  1649776945  1649776946  [14296, 14301, 14298, 14301, 14297, 14297, 143...
+                        1    JNH2      CI     HNE  ...  1649776945  1649776946  [-18436, -18437, -18439, -18437, -18433, -1843...
+                        2     WHF      CI     HHE  ...  1649776945  1649776946  [458, 473, 489, 481, 484, 490, 482, 461, 458, ...
+                        '''
                         data_used['inst'] = data_used['channel'].astype(str).str[:2]
                         df_candidates = data_used[['station','network','inst']].drop_duplicates()
 
@@ -188,6 +222,13 @@ class PickRun:
                             'process.stations.div',
                             num_cpu_cores_process=num_processes_str
                         )
+
+
+                        #We don't want to print out all the waveform station candidates we have, there are too many
+                        # logger.info(
+                        #     'all.candidate.waveform.stations',
+                        #     ourstation_foundellen_global_list=str(df_candidates_list)
+                        # )
 
                     with Timer() as process_stations_time:
                         complete_list=[]
@@ -351,34 +392,20 @@ class PickRun:
                         channelsNumberOfEach=count_unique_station_str
                     )
 
-
-                    #3/17/23 at the end of all this, we expire all data that we are ingesting that is at least 60 seconds old, to keep our nodes fresh
-                    with Timer() as expire_time:
-                        all_query_results=query_example.expire()
-
-                    #after expiration, we do a memory check for each node
-                    with Timer() as memoryAfterExpir_time:
-                        string_memAfterExpir=query_example.get_memory_usage()
-
-                    expire_time_elapsed=round(expire_time.elapsed,3)
-                    memoryAtBegin_time_elapsed=round(memoryAtBegin_time.elapsed,3)
-                    memoryAfterExpir_time_elapsed=round(memoryAfterExpir_time.elapsed,3)
-
-                    #to compare if we are cleaning up the memory
-                    logger.info(
-                        'memorycheck.results',
-                        memory_atBegin=string_memAtBegin,
-                        memory_afterExpir=string_memAfterExpir
-                    )
-
+                    # logger.info(
+                    #     'runtime.global.results',
+                    #     total_process_time=alltime_elapsed,
+                    #     batch_time=batch_time_elapsed,
+                    #     state=state
+                    # )
                     #1/17/23 RT update: Want to add the querying information: gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty
                     logger.info(
                         'runtime.globalquery.results',
                         total_process_time=alltime_elapsed,
                         batch_time=batch_time_elapsed,
-                        expire_time=expire_time_elapsed,
-                        access_memoryAfterExpire_time=memoryAtBegin_time_elapsed,
-                        access_memoryAfterExpire_time=memoryAfterExpir_time_elapsed,
+                        batch_gbytes_scanned=gbytes_scanned_thirty,
+                        batch_gbytes_metered=gbytes_metered_thirty,
+                        batch_query_cost=cost_for_query_thirty,
                         state=state
                     )
 
@@ -413,11 +440,12 @@ class PickRunner:
         :param no_sleep bool: don't sleep between iterations
         """
 
+        #Ryan (we won't need State)
+        # self.state = State(live=live)
         #We will call a function to get the maximum starttime at the moment
-        max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
-        #gbytes_scanned_tot,gbytes_metered_tot,cost_for_query
+        max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=self.__find_maxstarttime()
 
-        logger.info('max_timestream.query', query_time_elapsed=record_maxtime_seismicquery_time_elapsed,max_starttime=max_starttime)
+        logger.info('max_timestream.query', query_time_elapsed=record_maxtime_seismicquery_time_elapsed,max_starttime=max_starttime,gbytes_scanned=gbytes_scanned_tot,gbytes_metered=gbytes_metered_tot,query_cost=cost_for_query)
         logger.info('picker.boot')
 
         self.binsize = 30 
@@ -439,35 +467,54 @@ class PickRunner:
         #Introduced a stub value for comparison purposes; it starts at the end of the DB
         # self.__stub=self.state.endtime #thought this could be None at first
         #1/11/23 RT STUB update: we now take this to be the max_starttime
-        self.__stub=max_starttime #likely None at first, since there is no data in the DB (it has been cleared out with the expiry)
+        self.__stub=max_starttime #thought this could be None at first
 
 
-    #3/15/23 Will create a new function to find the maximum time. I will reference QueryExample too find the max start time 
-    #fn here and get the maximum time from there.
     def __find_maxstarttime(self):
-        with Timer() as record_maxtime_seismicquery_time:
-            maxtime_found=query_example.get_max_timestamp_query()
+        # query_specified_maxtime=f"""
+        #     SELECT MAX(measure_value::double) FROM devops_rt.host_metrics_rt
+        # """
 
-            if not maxtime_found: #if the query was empty, then we 
-                self.max_starttime==None #Set the maximum value to none here if there is nothing in the DB
-            else: 
-                self.max_starttime=int(maxtime_found) #maxtime_found is of type float, we cast it to int here
+        #Get the latest data, so we can reduce the query space for this 
+        query_specified_maxtime=f"""
+            SELECT MAX(measure_value::double) FROM devops_rt.host_metrics_rt WHERE time between ago(1m) and now() 
+        """
+
+        with Timer() as record_maxtime_seismicquery_time:
+            all_query_results,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=query_example.run_rt_query(query_specified_maxtime)
+
+            for result in all_query_results:
+                try:
+                    self.max_starttime=int(float(result['_col0']))
+                except: #I am presuming that if the DB is cleared after several days, there is nothing in the DB, so say 'None'
+                    self.max_starttime=None
+                break
 
         record_maxtime_seismicquery_time_elapsed=round(record_maxtime_seismicquery_time.elapsed,3)
-        return self.max_starttime, record_maxtime_seismicquery_time_elapsed #We will update the max_starttime each time we run this, so we ca reference it
+        return self.max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query #We will update the max_starttime each time we run this, so we ca reference it
 
-    #3/15/23 find minimum time. 
+
     def __find_minstarttime(self):
-        with Timer() as record_mintime_seismicquery_time:
-            mintime_found=query_example.get_min_timestamp_query()
+        # query_specified_maxtime=f"""
+        #     SELECT MIN(measure_value::double) FROM devops_rt.host_metrics_rt
+        # """
 
-            if not mintime_found: #if the query was empty, then we 
-                self.min_starttime==None #Set the maximum value to none here if there is nothing in the DB
-            else: 
-                self.min_starttime=int(mintime_found) #maxtime_found is of type float, we cast it to int here
+        query_specified_maxtime=f"""
+            SELECT MIN(measure_value::double) FROM devops_rt.host_metrics_rt WHERE time between ago(1m) and now()
+        """
+
+        with Timer() as record_mintime_seismicquery_time:
+            all_query_results,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query=query_example.run_rt_query(query_specified_maxtime)
+
+            for result in all_query_results:
+                try:
+                    self.min_starttime=int(float(result['_col0']))
+                except: #I am presuming that if the DB is cleared after several days, there is nothing in the DB, so say 'None'
+                    self.min_starttime=None
+                break
 
         record_mintime_seismicquery_time_elapsed=round(record_mintime_seismicquery_time.elapsed,3)
-        return self.min_starttime, record_mintime_seismicquery_time_elapsed #We will update the min_starttime each time we run this, so we can reference it
+        return self.min_starttime, record_mintime_seismicquery_time_elapsed,gbytes_scanned_tot,gbytes_metered_tot,cost_for_query #We will update the max_starttime each time we run this, so we ca reference it
 
     def __guess_starttime(self):
         starttime = time.time() - self.PICKER_DELAY_SECONDS - self.binsize
@@ -487,7 +534,7 @@ class PickRunner:
         wanted_starttime = self.__guess_starttime() #this will get the current time, so if our current time is somehow less than our sample, we get the bellow
         
         #Get the minimum starttime here if needed
-        min_starttime, _=self.__find_minstarttime()
+        min_starttime, _, _, _, _=self.__find_minstarttime()
         oldest_sample = min_starttime
         # oldest_sample = self.state.starttime
 
@@ -504,7 +551,7 @@ class PickRunner:
             wanted_starttime = self.__guess_starttime()
 
             #Get the minimum starttime here if needed
-            min_starttime, _=self.__find_minstarttime()
+            min_starttime, _, _, _, _=self.__find_minstarttime()
             oldest_sample = min_starttime
             # oldest_sample = self.state.starttime
 
@@ -543,14 +590,16 @@ class PickRunner:
             starting_format = now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-7]
             present_time=starting_format
 
-            #3/15/23 RT update; Chris had a PostGRES command to get the maximum time of the data ingested in the DB as well. We need to do this within Postgres.
-            # max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot_max,gbytes_metered_tot_max,cost_for_query_max=self.__find_maxstarttime()
-            max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
+            max_starttime, record_maxtime_seismicquery_time_elapsed,gbytes_scanned_tot_max,gbytes_metered_tot_max,cost_for_query_max=self.__find_maxstarttime()
+            # min_starttime, record_mintime_seismicquery_time_elapsed,gbytes_scanned_tot_min,gbytes_metered_tot_min,cost_for_query_min=self.__find_minstarttime()
             tot_query_elapsed=record_maxtime_seismicquery_time_elapsed
+            gbytes_scanned_all=gbytes_scanned_tot_max
+            gbytes_metered_all=gbytes_metered_tot_max
+            cost_for_query_all=cost_for_query_max
 
             #Recall that start_time_used is starttime = time.time() - self.PICKER_DELAY_SECONDS - self.binsize, so based off the current time we are running.
             #However, we only increment this start time if we get to the beginningOfNewJob, so we need to store new data continuously.
-            logger.info('monitor_initial', currentTS=start_time_used, latestTS=max_starttime,stubValue=self.__stub, query_time_elapsed=tot_query_elapsed)
+            logger.info('monitor_initial', currentTS=start_time_used, latestTS=max_starttime,stubValue=self.__stub, query_time_elapsed=tot_query_elapsed,gbytes_scanned=gbytes_scanned_all,gbytes_metered=gbytes_metered_all,cost_query=cost_for_query_all)
 
             # if start_time_used<=self.state.endtime or self.state.endtime != self.__stub:
             if start_time_used<=max_starttime or max_starttime != self.__stub:
