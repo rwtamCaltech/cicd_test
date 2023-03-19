@@ -148,9 +148,11 @@ class PickRun:
                         list_dicts=[ast.literal_eval(eq_query) for eq_query in all_query_results]
                         data_used=pd.DataFrame(list_dicts) #very fast to cobble up a dataframe with all of our desired data
 
-                        #RT transform the 'data' to be list of lists of data, which is what we need 
-                        data_list = [json.loads(data_item) for data_item in data_used['data'].tolist()] #to convert the list of strings to a list of lists
-                        data_used['data']=data_list #replacing the data column values with the list values in this list
+                        #RT 3/21/23 I need to check what the queried data looks like (should be a list of stringified-lists) 
+                        #VERIFIED WITH \\wsl$\ubuntu-18.04\home\rwtam\elasticacheTutorial\ConstantQueryingRedisV2.py
+                        #THIS IS ALREADY a list of lists for data_used['data'], not a list of strings. This is already good.
+                        # data_list = [json.loads(data_item) for data_item in data_used['data'].tolist()] #to convert the list of strings to a list of lists
+                        # data_used['data']=data_list #replacing the data column values with the list values in this list
 
                         data_used['inst'] = data_used['channel'].astype(str).str[:2]
                         df_candidates = data_used[['station','network','inst']].drop_duplicates()
