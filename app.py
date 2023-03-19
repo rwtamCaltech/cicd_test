@@ -415,6 +415,7 @@ class PickRunner:
 
         #We will call a function to get the maximum starttime at the moment
         max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
+
         #gbytes_scanned_tot,gbytes_metered_tot,cost_for_query
 
         logger.info('max_timestream.query', query_time_elapsed=record_maxtime_seismicquery_time_elapsed,max_starttime=max_starttime)
@@ -449,7 +450,7 @@ class PickRunner:
             maxtime_found=query_example.get_max_timestamp_query()
 
             if not maxtime_found: #if the query was empty, then we 
-                self.max_starttime==None #Set the maximum value to none here if there is nothing in the DB
+                self.max_starttime=None #Set the maximum value to none here if there is nothing in the DB
             else: 
                 self.max_starttime=int(maxtime_found) #maxtime_found is of type float, we cast it to int here
 
@@ -462,7 +463,7 @@ class PickRunner:
             mintime_found=query_example.get_min_timestamp_query()
 
             if not mintime_found: #if the query was empty, then we 
-                self.min_starttime==None #Set the maximum value to none here if there is nothing in the DB
+                self.min_starttime=None #Set the maximum value to none here if there is nothing in the DB
             else: 
                 self.min_starttime=int(mintime_found) #maxtime_found is of type float, we cast it to int here
 
