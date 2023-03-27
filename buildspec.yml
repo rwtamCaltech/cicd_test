@@ -16,6 +16,15 @@
 
 #Trying a newer buildspec.yml for our purposes
 version: 0.2
+
+
+#3/27/23 RT added as an example
+# env:
+#     parameter-store:
+#         AWS_ACCESS_KEY_ID_PARAM: /CodeBuild/AWS_ACCESS_KEY_ID
+#         AWS_SECRET_ACCESS_KEY_PARAM: /CodeBuild/AWS_SECRET_ACCESS_KEY
+
+
 phases:
   install:
     runtime-versions:
@@ -28,4 +37,4 @@ phases:
       - pip install djangoItems/django-djunk-0.32.1.zip
       - pip install djangoItems/ads-extras-0.2.2.zip
       - pip install common-layer/dependencies/quakes2aws.zip
-      # - python app_test.py
+      - python app_test.py
