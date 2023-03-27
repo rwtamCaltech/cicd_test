@@ -17,7 +17,7 @@
 #Trying a newer buildspec.yml for our purposes
 version: 0.2
 
-#RYAN EDIT
+#RYAN EDIT, took out VPC environment in console: https://us-west-2.console.aws.amazon.com/codesuite/codebuild/projects/ecs-devops-sandbox/details
 #3/27/23 RT added as an example
 # env:
 #     parameter-store:
