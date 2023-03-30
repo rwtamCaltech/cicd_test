@@ -117,7 +117,7 @@ class PickRun:
                         goodinstruments_counter_ov=0
 
                         #RT 3/17/23 Wrap it into a function that we can unit test:
-                        df_candidates_list,data_used=self.find_candidates(self,all_query_results)
+                        df_candidates_list,data_used=self.find_candidates(all_query_results)
 
                         numOfCores = multiprocessing.cpu_count()
 
