@@ -19,6 +19,7 @@ class QueryExample:
         return string_total #this returns the memory of each node used
         
 
+
     '''
     DERIVED from ConstantQueryingRedisV2.py
     The expiration helper function is derived from: https://stackoverflow.com/questions/24105074/redis-to-set-timeout-for-a-key-value-pair-in-set
@@ -41,6 +42,28 @@ class QueryExample:
             logger.info('data_query.exception',error=str(err))
             return 0
 
+    #PREVIOUS VERSION OF MY CODE:
+    # def run_rt_query(self,min_value=35,max_value=5):
+    #     try:
+    #         time_used=datetime.now()
+    #         ts_used = datetime.timestamp(time_used) 
+
+    #         min_timestamp_found=ts_used-min_value
+    #         max_timestamp_found=ts_used-max_value
+
+    #         min_experiment=min_timestamp_found
+    #         max_experiment=max_timestamp_found
+
+    #         list_of_dicts_returned=self.client.zrangebyscore(self.quakedata, min_experiment, max_experiment)
+    #         return list_of_dicts_returned
+    #     except Exception as err:
+    #         logger.info('data_query.exception',error=str(err))
+    #         return 0
+
+    '''
+    FROM: wsl ubuntu-18.04 elasticacheTutorialTestMinMaxOfData.py
+    We will get the min/max timestamps from here
+    '''
     def get_max_timestamp_query(self):
         value_max=self.client.zrevrange(self.quakedata, 0, 0,withscores=True)
         try:

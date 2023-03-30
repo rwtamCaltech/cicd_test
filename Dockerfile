@@ -49,7 +49,8 @@ RUN find . -name "*.pyc" -delete
 #to avoid bad magic number errors? https://stackoverflow.com/questions/514371/whats-the-bad-magic-number-error
 
 # Install application
-COPY app.py Constant.py QueryExample.py stations_Weiqiang_Ridgecrest.csv active_RT_primary_chan.txt antarctic_nonq330.txt antarctic_q330.txt ./
+# COPY app.py Constant.py QueryExample.py stations_Weiqiang_Ridgecrest.csv active_RT_primary_chan.txt antarctic_nonq330.txt antarctic_q330.txt ./
+COPY app.py Constant.py QueryExample.py PickRunner.py PickRun.py stations_Weiqiang_Ridgecrest.csv active_RT_primary_chan.txt antarctic_nonq330.txt antarctic_q330.txt ./
 COPY timeout.py ./
 # Run application
 CMD python app.py
