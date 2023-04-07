@@ -63,7 +63,15 @@ class PickRun:
                 channel_breakdown_station_list.append(inst)
                 # counter+=1
             else: #RT added 2/23/23 to see if we are missing any specific waveforms consistently in our runs
-                missing_waveform_stations.append(combo)
+
+                #4/7/23 WITH REDIS, there are occasions when for some reason, we are not getting the full amount of stations. I want to drill down on this and print 
+                #the len(df_complete) where len(df_complete) exceeds say 60, something close to what we would expect. Then we can see if we "close" to getting the data at 
+                #that point. 
+                if len(df_complete)>60:
+                    station_list=combo+': '+str(len(df_complete))
+                    missing_waveform_stations.append(station_list)
+
+                # missing_waveform_stations.append(combo)
 
         
         #complete_list (and maybe channel_breakdown_station_list, for later; are the only things we want to return)
@@ -254,10 +262,19 @@ class PickRun:
                     #2/23/23 RT: These print out the list of stations that do NOT have the three channels (and thus don't have picks).
                     #If we consistently get stations in this list over many 30-second increments, then that station isn't fully emitting to its potential, and might
                     #need to be debugged/flagged. Not my problem - likely a hardware side aspect. 
+
+                    #4/7/23 RT update: (Want to print out missing stations we had that are somewhat close to what we would expect but ended up not enough)
+                    num_close_stations=len(missing_waveform_totlist)
                     logger.info(
-                        'waveform.nothreechannel.stations',
-                        waveform_nothreechannel_list=str(missing_waveform_totlist)
+                        'waveform.closethreechannel.stations',
+                        num_close_stations=str(num_close_stations),
+                        waveform_closethreechannel_list=str(missing_waveform_totlist)
                     )
+
+                    # logger.info(
+                    #     'waveform.nothreechannel.stations',
+                    #     waveform_nothreechannel_list=str(missing_waveform_totlist)
+                    # )
 
                     #filtering_stations_time=filtering_stations_time_elapsed, #DON'T NEED THIS (very fast anyway, will find out overhead with process_stations_time)
                     logger.info(
