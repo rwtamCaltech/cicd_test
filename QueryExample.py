@@ -26,7 +26,11 @@ class QueryExample:
     '''
     def expire(self):
         time_used=datetime.now()
-        ts_used = datetime.timestamp(time_used)-60 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
+
+        # ts_used = datetime.timestamp(time_used)-60 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
+
+        #EXPIRE DATA AFTER 2 mins, see if it makes a difference
+        ts_used = datetime.timestamp(time_used)-120 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
         self.client.zremrangebyscore(self.quakedata, '-inf', ts_used)
 
     '''

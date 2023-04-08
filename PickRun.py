@@ -111,6 +111,14 @@ class PickRun:
                     initial_starttime=endtime-self.binsize-5 #-6 at first, but let's try -5 here. 
                     final_starttime=endtime-5
 
+                    #I trust what I am querying, but want to make sure intervals are fine
+                    logger.info(
+                        'query.intervals',
+                        start_interval=str(initial_starttime),
+                        end_interval=str(final_starttime)
+                    )
+
+
                     all_query_results=self.querymechPickRun.run_rt_query(initial_starttime,final_starttime)
 
                 #At this point, we see if we have results
