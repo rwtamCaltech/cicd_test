@@ -124,12 +124,13 @@ class PickRun:
         '''
         RT 4/10/23 update: see if this works to get rid of edge cases where we REALLY get other channel bits
         The only channel bits we would care about are E, N, and Z
+        https://sparkbyexamples.com/pandas/pandas-delete-rows-based-on-column-value/
         '''
         data_used['channelbit'] = data_used['channel'].astype(str).str[-1]
         # print(data_used['channelbit'].tolist())
         # df2 = df[ (df['Fee'] >= 22000) & (df['Discount'] == 2300)]
         #To really set the restriction for our acceptable data to be only E, N and Z bits 
-        data_used = data_used[(data_used['channelbit'] == 'E') & (data_used['channelbit'] == 'N') & (data_used['channelbit'] == 'Z')]
+        data_used = data_used[(data_used['channelbit'] == 'E') | (data_used['channelbit'] == 'N') | (data_used['channelbit'] == 'Z')]
 
         data_used['inst'] = data_used['channel'].astype(str).str[:2]
         df_candidates = data_used[['station','network','inst']].drop_duplicates()
