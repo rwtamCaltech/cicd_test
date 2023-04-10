@@ -55,8 +55,7 @@ class PickRun:
             df_complete=data_used[(data_used['station']==station) & (data_used['network']==network) & (data_used['inst']==inst)]
             df_complete = df_complete.drop_duplicates(subset=['station','network','channel','startt']) #RT!!!! Had to get rid of extra duplicates here too. (but need to keep specific items)
 
-            if len(df_complete)==number_total_channels-15 or len(df_complete)==number_total_channels-12 or len(df_complete)==number_total_channels-9 or len(df_complete)==number_total_channels-3 or len(df_complete)==number_total_channels-6 or len(df_complete)==number_total_channels or len(df_complete)==number_total_channels+3 or len(df_complete)==number_total_channels+6 or len(df_complete)==number_total_channels+9 or len(df_complete)==number_total_channels+12:
-            # if len(df_complete)==number_total_channels-3 or len(df_complete)==number_total_channels-6 or len(df_complete)==number_total_channels or len(df_complete)==number_total_channels+3 or len(df_complete)==number_total_channels+6:
+            if len(df_complete)==number_total_channels-3 or len(df_complete)==number_total_channels-6 or len(df_complete)==number_total_channels or len(df_complete)==number_total_channels+3 or len(df_complete)==number_total_channels+6:
                 goodinstruments_counter+=1
                 data_used_final = df_complete
                 data_used_final_sorted=data_used_final.sort_values(by=['station', 'network','channel','startt'])
@@ -91,7 +90,7 @@ class PickRun:
 
 
                     #STEP 2: Get all startt's and see what they are
-                    # startt_list=df_complete['startt'].tolist() 
+                    startt_list=df_complete['startt'].tolist() 
                     #I want to make sure all the startt's are within the query intervals, but also that I
                     #am not getting extraneous startt's (maybe coming from other channels)
                     '''
@@ -103,10 +102,10 @@ class PickRun:
                     #IE: 'CI.BAK.HN: 83', 'CI.BBS.HH: 88',
                     #channelsFound=unique_station_str,channelsNumberOfEach=count_unique_station_str
 
-                    station_list=combo+': '+str(len(df_complete))
+                    # station_list=combo+': '+str(len(df_complete))
 
                     #STEP 3: Get the missing station compositions, plus any time aspects to get a comprehensive picture
-                    # station_list=combo+': '+str(len(df_complete))+', list start times: '+str(startt_list)+', Missing channel types: '+str(unique_missstation_str)+', Count, missing channel types: '+str(count_missunique_station_str)
+                    station_list=combo+': '+str(len(df_complete))+', list start times: '+str(startt_list)+', Missing channel types: '+str(unique_missstation_str)+', Count, missing channel types: '+str(count_missunique_station_str)
 
                     missing_waveform_stations.append(station_list)
 
@@ -120,16 +119,6 @@ class PickRun:
     def find_candidates(self,all_query_results):
         list_dicts=[ast.literal_eval(eq_query) for eq_query in all_query_results]
         data_used=pd.DataFrame(list_dicts) #very fast to cobble up a dataframe with all of our desired data
-
-        '''
-        RT 4/10/23 update: see if this works to get rid of edge cases where we REALLY get other channel bits
-        The only channel bits we would care about are E, N, and Z
-        '''
-        data_used['channelbit'] = data_used['channel'].astype(str).str[-1]
-        # print(data_used['channelbit'].tolist())
-        # df2 = df[ (df['Fee'] >= 22000) & (df['Discount'] == 2300)]
-        #To really set the restriction for our acceptable data to be only E, N and Z bits 
-        data_used = data_used[(data_used['channelbit'] == 'E') & (data_used['channelbit'] == 'N') & (data_used['channelbit'] == 'Z')]
 
         data_used['inst'] = data_used['channel'].astype(str).str[:2]
         df_candidates = data_used[['station','network','inst']].drop_duplicates()
