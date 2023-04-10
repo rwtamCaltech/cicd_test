@@ -68,7 +68,45 @@ class PickRun:
                 #the len(df_complete) where len(df_complete) exceeds say 60, something close to what we would expect. Then we can see if we "close" to getting the data at 
                 #that point. 
                 if len(df_complete)>60:
-                    station_list=combo+': '+str(len(df_complete))
+
+                    #STEP 1:
+                    #I want to see all the actual missing channels I am getting here, and see breakdown of their amounts
+                    missing_channel_list=df_complete['channel'].tolist() #ie HHZ,HHN, HHE, and whatever other channels might possibly exist as part of that data?
+                    unique_misschannels_found=list(set(missing_channel_list))
+                    unique_missstation_str=''
+                    count_missunique_station_str=''
+                    for index, unique_channel in enumerate(unique_misschannels_found):
+                        spec_channel_count=missing_channel_list.count(unique_channel)
+
+                        if index!=len(unique_misschannels_found)-1: #not at the end of the list
+                            unique_channel_mod=unique_channel+','
+                            spec_channel_mod=str(spec_channel_count)+','
+                        else: #end of the list
+                            unique_channel_mod=unique_channel
+                            spec_channel_mod=str(spec_channel_count)
+                        
+                        unique_missstation_str+=unique_channel_mod
+                        count_missunique_station_str+=spec_channel_mod
+
+
+                    #STEP 2: Get all startt's and see what they are
+                    startt_list=df_complete['startt'].tolist() 
+                    #I want to make sure all the startt's are within the query intervals, but also that I
+                    #am not getting extraneous startt's (maybe coming from other channels)
+                    '''
+                    IE Within our printed log intervals:
+                    quakes2aws::datastore: query.intervals end_interval=1680930872 start_interval=1680930842
+                    '''
+
+                    #Below, combo for example is the network.station.inst; IE: CI.BAK.HN;
+                    #IE: 'CI.BAK.HN: 83', 'CI.BBS.HH: 88',
+                    #channelsFound=unique_station_str,channelsNumberOfEach=count_unique_station_str
+
+                    # station_list=combo+': '+str(len(df_complete))
+
+                    #STEP 3: Get the missing station compositions, plus any time aspects to get a comprehensive picture
+                    station_list=combo+': '+str(len(df_complete))+', list start times: '+str(startt_list)+', Missing channel types: '+str(unique_missstation_str)+', Count, missing channel types: '+str(count_missunique_station_str)
+
                     missing_waveform_stations.append(station_list)
 
                 # missing_waveform_stations.append(combo)
