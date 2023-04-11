@@ -30,7 +30,8 @@ class QueryExample:
 
         max_timestamp_found=self.get_max_timestamp_query()
         #EXPIRE DATA 2 minutes from our MAXIMUM DATA, see if it makes a difference
-        ts_used = datetime.timestamp(max_timestamp_found)-120 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
+        #max_timestamp_found is a float, let's make it an int here.
+        ts_used = int(max_timestamp_found)-120 #delete data up to the past 120 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
         self.client.zremrangebyscore(self.quakedata, '-inf', ts_used)
 
 
