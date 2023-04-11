@@ -25,21 +25,13 @@ class QueryExample:
     set each member's score to its expiry time using epoch values
     '''
     def expire(self):
-        #4/11/23 Now we want to delete data based on our latest timestamps that are in the data, now that we can reference older replayed timestamps
-        #So we shouldn't reference the current time
+        time_used=datetime.now()
 
-        max_timestamp_found=self.get_max_timestamp_query()
-        #EXPIRE DATA 2 minutes from our MAXIMUM DATA, see if it makes a difference
-        ts_used = datetime.timestamp(max_timestamp_found)-120 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
-        self.client.zremrangebyscore(self.quakedata, '-inf', ts_used)
-
-
-        # time_used=datetime.now()
         # ts_used = datetime.timestamp(time_used)-60 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
 
         #EXPIRE DATA AFTER 2 mins, see if it makes a difference
-        # ts_used = datetime.timestamp(time_used)-120 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
-        # self.client.zremrangebyscore(self.quakedata, '-inf', ts_used)
+        ts_used = datetime.timestamp(time_used)-120 #delete data up to the past 60 seconds (some "buffer", since we get data from the 35 second to the 5 second mark)
+        self.client.zremrangebyscore(self.quakedata, '-inf', ts_used)
 
     '''
     Setting up the realtime query, default function is to get from 35 to 5 to get the latency-embedded 30 second window

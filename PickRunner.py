@@ -214,3 +214,19 @@ class PickRunner:
                     sampRate=self.samprate,
                     currentTS=str(start_time_used)
                 )
+
+                #4/11/23 if we ever get an idling case (for instance, switching from modern to replay data within seconds of each other), we
+                #can make sure to clear the Redis DB in this way, and expire the data
+                string_memBeforeClear=self.querymech.get_memory_usage()
+
+                all_query_results=self.querymech.expire()
+                string_memAfterClear=self.querymech.get_memory_usage()
+
+                logger.info(
+                    'memorycheck.results',
+                    memory_atBegin=string_memBeforeClear,
+                    memory_afterExpir=string_memAfterClear
+                )
+
+                #^^The expectation is that after one iteration of "caughtUpToDBSoIdle", it will error out and try to relaunch the ECS instance many times instead.
+                #If there is no data going through to it anymore.
