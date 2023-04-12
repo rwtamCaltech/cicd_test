@@ -1,7 +1,8 @@
 # from Constant import DATABASE_NAME, TABLE_NAME, ONE_GB_IN_BYTES, QUERY_COST_PER_GB_IN_DOLLARS
-from contexttimer import Timer
+# from contexttimer import Timer
 from quakes2aws_datastore.logging import logger  # noqa:E402
-from datetime import datetime
+# from datetime import datetime
+import time
 
 class QueryExample:
     def __init__(self, client):
@@ -18,6 +19,12 @@ class QueryExample:
             string_total+=string_node
         return string_total #this returns the memory of each node used
         
+    #4/12/23 RT UPDATE: 
+    #EXPIRE ALL DATA WITHIN THE REDIS DB when first running this, useful for when we switch from realtime to replay data, or vice-versa
+    #We would shut down the ECS cluster, restart it so then this clearing of the DB can be invoked.
+    def expire_all_data(self):
+        self.client.zremrangebyscore(self.quakedata, '-inf', int(time.time()))
+
 
     '''
     DERIVED from ConstantQueryingRedisV2.py

@@ -158,27 +158,7 @@ class PickRunner:
         # #Explore trimming the database from here
         # counter_trimDB=0 
 
-        #4/12/23 - at the beginning, expire data, so we have a clean slate to work with
-        string_memBeforeClear=self.querymech.get_memory_usage()
-        self.querymech.expire_all_data()
-        string_memAfterClear=self.querymech.get_memory_usage()
-
-        logger.info(
-            'beginningExpireAllData.memorycheck.results',
-            memory_atBegin=string_memBeforeClear,
-            memory_afterExpir=string_memAfterClear
-        )
-
-        #4/12/23 - also set a default max_starttime when we first run this
-        max_starttime=-99999 #some impossible number to reach at first
-        start_time_used=-99999 #set this to some impossible number to reach at first
-
         while True:
-            #4/12/23 if we get to a case where we cancel the stream of data we are running, then it is likely the max_starttime would equal
-            #the previous max_starttime
-            oldermax_starttime=max_starttime #this refers to the latestTS
-            olderstarttime_used=start_time_used #refers to the older currentTS
-
             #One element is to make sure we have caught up to the DB (taken from the job fn)
             start_time_used=self.__starttime
             now = datetime.now() # current date and time
@@ -195,19 +175,7 @@ class PickRunner:
             logger.info('monitor_initial', currentTS=start_time_used, latestTS=max_starttime,stubValue=self.__stub, query_time_elapsed=tot_query_elapsed)
 
             # if start_time_used<=self.state.endtime or self.state.endtime != self.__stub:
-
-
-            #4/12/23 I want to add a conditional for realtime that leads to idling if we are not getting any new data (IE we stop our stream source)
-            if max_starttime==oldermax_starttime and start_time_used==olderstarttime_used:
-                logger.info(
-                    'caughtUpToDBSoIdle',
-                    latestTS=str(self.max_starttime),
-                    presentTime=starting_format,
-                    binSize=self.binsize,
-                    sampRate=self.samprate,
-                    currentTS=str(start_time_used)
-                )
-            elif start_time_used<=max_starttime or max_starttime != self.__stub:
+            if start_time_used<=max_starttime or max_starttime != self.__stub:
                 logger.info(
                     'beginningOfNewJob',
                     presentTime=present_time,
