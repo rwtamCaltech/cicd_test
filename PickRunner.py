@@ -24,7 +24,7 @@ class PickRunner:
     """
     Run the picker in a loop.
     """
-    def __init__(self, starttime=None, count=None, no_sleep=False, live=True, mark_as_processed=True,querymech="Base",test=False):
+    def __init__(self, starttime=None, count=None, no_sleep=False, live=True, mark_as_processed=True,querymech="Base",querypicks="Base",test=False):
         """
         :param starttime float: start data going forward from this SampleSet starttime
         :param count int: do this many iterations, then stop
@@ -33,6 +33,9 @@ class PickRunner:
 
         #3/28/23 RT add -->added the querymechanism here
         self.querymech=querymech
+
+        #5/8/23 added
+        self.querypicks=querypicks
 
         #We will call a function to get the maximum starttime at the moment
         max_starttime, record_maxtime_seismicquery_time_elapsed=self.__find_maxstarttime()
@@ -158,9 +161,12 @@ class PickRunner:
         # #Explore trimming the database from here
         # counter_trimDB=0 
 
-        #4/12/23 - at the beginning, expire data, so we have a clean slate to work with
+        #4/12/23 - at the beginning, expire ALL waveform data, so we have a clean slate to work with
         string_memBeforeClear=self.querymech.get_memory_usage()
         self.querymech.expire_all_data()
+
+        #5/8/23 - added expiring all the pick data here too, below memory check checks ALL memory in Redis DB
+        self.querypicks.expire_all_picks()
         string_memAfterClear=self.querymech.get_memory_usage()
 
         logger.info(
@@ -207,6 +213,9 @@ class PickRunner:
                     sampRate=self.samprate,
                     currentTS=str(start_time_used)
                 )
+
+                #I will test a new condition to sleep for 30 seconds if we are idling (just so we clean out our cloudwatch logs in idle cases)
+                time.sleep(30)
             elif start_time_used<=max_starttime or max_starttime != self.__stub:
                 logger.info(
                     'beginningOfNewJob',
@@ -247,7 +256,9 @@ class PickRunner:
                     currentTS=str(start_time_used)
                 )
 
-
+                #I will test a new condition to sleep for 30 seconds if we are idling (just so we clean out our cloudwatch logs in idle cases)
+                time.sleep(30)
+                
                 '''
                 4/11/23: ACTUALLY comment out the below, I wonder if constant expiration of data might lead to some of the problems seen.
                 That may be why our latestTS might be stuck all the time.

@@ -263,14 +263,23 @@ class PickRun:
 
                     s3_output_file_one='data_analysis/sample_chunked_' #+str(counter)+'.zip'
                     s3_output_file_two='data_analysis_two/sample_chunked_' #+str(counter)+'.zip'
-                    s3_output_list=[s3_output_file_one,s3_output_file_two]
 
-                    #RT 5/8/23 added:
-                    s3_gamma_trigger='triggerGaMMa/sample_chunked_'
+                    #added additional buckets to put the data into 
+                    s3_output_file_three='data_analysis_three/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_four='data_analysis_four/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_five='data_analysis_five/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_six='data_analysis_six/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_seven='data_analysis_seven/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_eight='data_analysis_eight/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_nine='data_analysis_nine/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_ten='data_analysis_ten/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_eleven='data_analysis_eleven/sample_chunked_' #+str(counter)+'.zip'
+                    s3_output_file_twelve='data_analysis_twelve/sample_chunked_' #+str(counter)+'.zip'
+
+                    s3_output_list=[s3_output_file_one,s3_output_file_two,s3_output_file_three,s3_output_file_four,s3_output_file_five,s3_output_file_six,s3_output_file_seven,s3_output_file_eight,s3_output_file_nine,s3_output_file_ten,s3_output_file_eleven,s3_output_file_twelve]
 
                     counterZip=0
                     with Timer() as aggregate_time:
-                        #To save each of our sample_chunks across those 2 buckets
                         for item in final: #so for each of these 12 items, we have 55 dataframes. Each of these 55 dataframes are 87by12s or 90by12s together in a csv file
                             df1 = pd.DataFrame()
                             df1=df1.append(item)
@@ -286,15 +295,11 @@ class PickRun:
                             zipObj.close()
 
                             counterZip+=1
-                            bucket_index = (counterZip) % 2 #alternate between the different buckets in the list
+                            bucket_index = (counterZip) % 12 #alternate between the 12 different buckets in the list
                             s3_output_file_root=s3_output_list[bucket_index]
                             s3_output_file=s3_output_file_root+counter_used
                             s3.upload_to_s3(desired_zip_file, s3_output_file) #will also call the S3 bucket GPD_PickLog with the specific timestamps as well
 
-                            if counterZip==1: #Only save a zip file to our new S3 bucket only once, to time a 30s increment
-                                #To save our text file into the new bucket we have created (5/8/23 RT update) [only a sample_chunked_0.csv]
-                                s3_gamma_outputfile=s3_gamma_trigger+counter_used
-                                s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
 
                     #To get the unique stations, had to change to: channelbrk_list_modded
                     with Timer() as get_unique_channels_time:

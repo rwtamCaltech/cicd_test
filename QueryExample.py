@@ -4,6 +4,18 @@ from quakes2aws_datastore.logging import logger  # noqa:E402
 # from datetime import datetime
 import time
 
+#5/8/23 RT update
+#class to expire all picks, and start with fresh batch at the beginning
+class PickExpire:
+    def __init__(self, client):
+        self.client = client
+        # self.paginator = client.get_paginator('query')
+        self.pickdata = "PickData"
+
+    def expire_all_picks(self):
+        self.client.zremrangebyscore(self.pickdata, '-inf', int(time.time()))
+
+
 class QueryExample:
     def __init__(self, client):
         self.client = client

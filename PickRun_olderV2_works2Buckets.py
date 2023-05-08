@@ -265,12 +265,8 @@ class PickRun:
                     s3_output_file_two='data_analysis_two/sample_chunked_' #+str(counter)+'.zip'
                     s3_output_list=[s3_output_file_one,s3_output_file_two]
 
-                    #RT 5/8/23 added:
-                    s3_gamma_trigger='triggerGaMMa/sample_chunked_'
-
                     counterZip=0
                     with Timer() as aggregate_time:
-                        #To save each of our sample_chunks across those 2 buckets
                         for item in final: #so for each of these 12 items, we have 55 dataframes. Each of these 55 dataframes are 87by12s or 90by12s together in a csv file
                             df1 = pd.DataFrame()
                             df1=df1.append(item)
@@ -291,10 +287,6 @@ class PickRun:
                             s3_output_file=s3_output_file_root+counter_used
                             s3.upload_to_s3(desired_zip_file, s3_output_file) #will also call the S3 bucket GPD_PickLog with the specific timestamps as well
 
-                            if counterZip==1: #Only save a zip file to our new S3 bucket only once, to time a 30s increment
-                                #To save our text file into the new bucket we have created (5/8/23 RT update) [only a sample_chunked_0.csv]
-                                s3_gamma_outputfile=s3_gamma_trigger+counter_used
-                                s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
 
                     #To get the unique stations, had to change to: channelbrk_list_modded
                     with Timer() as get_unique_channels_time:

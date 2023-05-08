@@ -13,6 +13,9 @@ django.setup()
 # from quakes2aws_datastore.core.models import State #We won't be using the PostgresDB so State is not important
 from QueryExample import QueryExample
 
+#RT 5/8/23 add: I'm going to add a feature to delete all of our picks upon startup, so look into this. 
+from QueryExample import PickExpire
+
 #REDIS used here
 from rediscluster import RedisCluster
 
@@ -20,6 +23,8 @@ from rediscluster import RedisCluster
 #3.16.23 UPDATE:
 redis = RedisCluster(startup_nodes=[{"host": "redis-cluster.1ge2d2.clustercfg.usw2.cache.amazonaws.com","port": "6379"}], decode_responses=True,skip_full_coverage_check=True)
 query_example = QueryExample(redis)
+query_picks = PickExpire(redis) #RT 5/8/23 added
+
 
 # Initialize Logger
 LOGGER = logging.getLogger()
@@ -34,6 +39,7 @@ if __name__ == '__main__':
         no_sleep=False,
         live=not False,
         mark_as_processed=not False,
-        querymech=query_example
+        querymech=query_example,
+        querypicks=query_picks
     )
     runner.run(test=False)
