@@ -266,7 +266,8 @@ class PickRun:
                     s3_output_list=[s3_output_file_one,s3_output_file_two]
 
                     #RT 5/8/23 added:
-                    s3_gamma_trigger='triggerGaMMa/sample_chunked_'
+                    # s3_gamma_trigger='triggerGaMMa/sample_chunked_'
+                    s3_gamma_trigger='triggerGaMMa/'
 
                     counterZip=0
                     with Timer() as aggregate_time:
@@ -293,8 +294,16 @@ class PickRun:
 
                             if counterZip==1: #Only save a zip file to our new S3 bucket only once, to time a 30s increment
                                 #To save our text file into the new bucket we have created (5/8/23 RT update) [only a sample_chunked_0.csv]
-                                s3_gamma_outputfile=s3_gamma_trigger+counter_used
-                                s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
+                                file_format_picks='triggerGamma.txt'
+
+                                #To create the file
+                                with open(file_format_picks, 'w') as fp:
+                                    pass
+
+                                s3_gamma_outputfile=s3_gamma_trigger+file_format_picks #for our S3 bucket
+                                s3.upload_to_s3(file_format_picks, s3_gamma_outputfile) 
+                                # s3_gamma_outputfile=s3_gamma_trigger+counter_used
+                                # s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
 
                     #To get the unique stations, had to change to: channelbrk_list_modded
                     with Timer() as get_unique_channels_time:
