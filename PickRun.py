@@ -424,9 +424,12 @@ class PickRun:
                             data_used=pd.DataFrame(list_dicts) 
                             data_used = data_used.rename(columns={"confidence": "prob"}) #this was used in our prior "to GaMMa code"; need it as prob
                             #5/12/23 update: In the event we really get a few duplicates, let's just make sure we are not getting those (drop prob value as renamed now)
-                            df_cands = data_used[['id','datetime','prob']].drop_duplicates()
-                            chunked_data=data_used['chunk_used'].tolist()
-                            retrieved_timestamps=data_used['retrieved_timestamp'].tolist()
+                            # df_cands = data_used[['id','datetime','prob']].drop_duplicates()
+                            # df_cands = data_used.drop_duplicates() #can run this
+                            df_cands = data_used.drop_duplicates(subset = ['id','datetime','prob'],keep = 'last').reset_index(drop = True)
+
+                            chunked_data=df_cands['chunk_used'].tolist()
+                            retrieved_timestamps=df_cands['retrieved_timestamp'].tolist()
 
                             #STEP 3: SAVE PICKS TO S3 BUCKET
                             number_picks_processed=len(df_cands)
