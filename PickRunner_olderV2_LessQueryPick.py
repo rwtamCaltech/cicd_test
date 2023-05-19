@@ -232,8 +232,7 @@ class PickRunner:
                     self.samprate,
                     present_time,
                     mark_as_processed=self.mark_as_processed,
-                    querymech=self.querymech,
-                    querypick=self.querypicks
+                    querymech=self.querymech
                 ).run(test=self.test)
 
                 #Then

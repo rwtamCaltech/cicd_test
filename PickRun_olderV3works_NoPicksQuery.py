@@ -14,7 +14,6 @@ from zipfile import ZipFile
 import zipfile
 
 import quakes2aws_datastore.s3 as s3
-import json
 
 class PickRun:
     """
@@ -23,7 +22,7 @@ class PickRun:
     Ryan notes; took out fn: def mark_sets_as_processed(self, set_ids); don't think we use them.
     """
     # def __init__(self, starttime, min_starttime,binsize, samprate, present_time,mark_as_processed=True):
-    def __init__(self, starttime,binsize, samprate, present_time,mark_as_processed=True,querymech='Base',querypick='Base'):
+    def __init__(self, starttime,binsize, samprate, present_time,mark_as_processed=True,querymech='Base'):
         # self.state = state
         self.starttime = starttime
         # self.min_starttime=min_starttime
@@ -33,7 +32,6 @@ class PickRun:
         self.mark_as_processed = mark_as_processed
 
         self.querymechPickRun=querymech
-        self.querypickPickRun=querypick
 
     #Took out a lot of DB type saves in the start and finish sections here. Don't save pick_run_stats or summary at start and finish, respectively.
     def __start(self):
@@ -269,7 +267,7 @@ class PickRun:
 
                     #RT 5/8/23 added:
                     # s3_gamma_trigger='triggerGaMMa/sample_chunked_'
-                    # s3_gamma_trigger='triggerGaMMa/'
+                    s3_gamma_trigger='triggerGaMMa/'
 
                     counterZip=0
                     with Timer() as aggregate_time:
@@ -294,19 +292,18 @@ class PickRun:
                             s3_output_file=s3_output_file_root+counter_used
                             s3.upload_to_s3(desired_zip_file, s3_output_file) #will also call the S3 bucket GPD_PickLog with the specific timestamps as well
 
-                            #5/19/23 RT UPDATE: Don't need gamma trigger file anymore, since our lambda fn is phased into here for the pick querying
-                            # if counterZip==1: #Only save a zip file to our new S3 bucket only once, to time a 30s increment
-                            #     #To save our text file into the new bucket we have created (5/8/23 RT update) [only a sample_chunked_0.csv]
-                            #     file_format_picks='triggerGamma.txt'
+                            if counterZip==1: #Only save a zip file to our new S3 bucket only once, to time a 30s increment
+                                #To save our text file into the new bucket we have created (5/8/23 RT update) [only a sample_chunked_0.csv]
+                                file_format_picks='triggerGamma.txt'
 
-                            #     #To create the file
-                            #     with open(file_format_picks, 'w') as fp:
-                            #         pass
+                                #To create the file
+                                with open(file_format_picks, 'w') as fp:
+                                    pass
 
-                            #     s3_gamma_outputfile=s3_gamma_trigger+file_format_picks #for our S3 bucket
-                            #     s3.upload_to_s3(file_format_picks, s3_gamma_outputfile) 
-                            #     # s3_gamma_outputfile=s3_gamma_trigger+counter_used
-                            #     # s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
+                                s3_gamma_outputfile=s3_gamma_trigger+file_format_picks #for our S3 bucket
+                                s3.upload_to_s3(file_format_picks, s3_gamma_outputfile) 
+                                # s3_gamma_outputfile=s3_gamma_trigger+counter_used
+                                # s3.upload_to_s3(desired_zip_file, s3_gamma_outputfile) 
 
                     #To get the unique stations, had to change to: channelbrk_list_modded
                     with Timer() as get_unique_channels_time:
@@ -381,7 +378,7 @@ class PickRun:
                     )
 
 
-                    #3/17/23 at the end of all this, we expire all waveform data that we are ingesting that is at least 60 seconds old, to keep our nodes fresh
+                    #3/17/23 at the end of all this, we expire all data that we are ingesting that is at least 60 seconds old, to keep our nodes fresh
                     with Timer() as expire_time:
                         all_query_results=self.querymechPickRun.expire()
 
@@ -393,93 +390,11 @@ class PickRun:
                     memoryAtBegin_time_elapsed=round(memoryAtBegin_time.elapsed,3)
                     memoryAfterExpir_time_elapsed=round(memoryAfterExpir_time.elapsed,3)
 
-
-                    #5/19/23 RT added: QUERYING PICK DATA FROM THE DB, FOR GaMMa USE 
-                    with Timer() as access_redis_time:
-                        #Strategy derived from: ConstantQueryingRedisPicks.py; DON'T NEED THIS: pickdata
-                        max_time_found=self.querypickPickRun.get_max_timestamp_query()
-
-                        if not max_time_found: #In our test, if no data is coming through, then we know we are sleeping through it. Keep it here at the moment.
-                            max_time_found=0
-
-                        #I want to wait a bit to accrue picks from the 2m5s to 1m35s mark, see if I can maximize pick acquisition here
-                        #we get the a 60 second window of picks with a 30-second overlap between them 
-                        initial_starttime=max_time_found-155 #can introduce a 5 second latency for pick acquisition, much like we do with the waveforms 
-                        final_starttime=max_time_found-95
-                        all_query_results=self.querypickPickRun.run_rt_query(initial_starttime,final_starttime)
-                        queried_results=len(all_query_results)
-
-                    querying_time=round(access_redis_time.elapsed,3)
-
-                    with Timer() as orgpick_runGaMMa:
-                        picks_fromredis_file='PicksFound.json' #will save this as a json file
-                        if queried_results!=0:
-                            '''
-                            Reading in data that looks like this:
-                            {'id': 'CI.CRF..HN', 'sta': 'CRF', 'net': 'CI', 'inst': 'HN', 'loc': '--', 'datetime': '2022-06-01T23:24:54.370', 'timestamp': 1654125894.37, 
-                            'confidence': 0.3247925639152527, 'amp': 2.952020258817356e-05, 'pickwidth': 0, 'type': 'P'}
-                            '''
-                            #STEP 2: Organize the picks into the format to run GaMMa upon, if picks are found from query
-                            list_dicts=[ast.literal_eval(eq_query) for eq_query in all_query_results]
-                            data_used=pd.DataFrame(list_dicts) 
-                            data_used = data_used.rename(columns={"confidence": "prob"}) #this was used in our prior "to GaMMa code"; need it as prob
-                            #5/12/23 update: In the event we really get a few duplicates, let's just make sure we are not getting those (drop prob value as renamed now)
-                            df_cands = data_used[['id','datetime','prob']].drop_duplicates()
-                            chunked_data=data_used['chunk_used'].tolist()
-                            retrieved_timestamps=data_used['retrieved_timestamp'].tolist()
-
-                            #STEP 3: SAVE PICKS TO S3 BUCKET
-                            number_picks_processed=len(df_cands)
-                            if number_picks_processed!=0:
-                                picks_filtered= df_cands.to_dict() #convert back to dict
-                                # df_json_str = json.dumps(picks_filtered) #this is of type str now (I think this works in python3.6 and beyond, which we have)
-
-                                #This is the point where we dump the pick str into a json file that we put back into S3
-                                #RT 5/17/23, save as a json file locally in our /tmp file and then into our S3 bucket, so we can ping another lambda function to run GaMMa on it.
-                                #derived from ryanTest's pandasToDict.py
-                                with open(picks_fromredis_file, "w") as outfile:
-                                    json.dump(picks_filtered, outfile)
-                                
-                                # create_new_event_folder(s3_folder_name_used) #Don't think I need to create a new S3 bucket folder
-                                s3_output_file='RedisPicks/PicksFound.json'
-                                s3.upload_to_s3(picks_fromredis_file, s3_output_file) 
-                                #Our next lambda function will trigger off json files put into the "RedisPicks" path, retrieve the data, and will get the catalog data off of it
-                            
-                            #If we get picks, we report this more detailed log/otherwise we report a simpler log
-                            #detailed log has unique_chunked_data_from_picks, unique_timestamped_data_from_picks,unique_picks_found
-                            #dedicated logger for pick querying results 
-                            logger.info(
-                                'pickquery.results',
-                                pick_initQueryTime=str(initial_starttime),
-                                pick_finalQueryTime=str(final_starttime),
-                                queryDB_picks_time=str(querying_time),
-                                unique_chunked_data_from_picks=str(list(set(chunked_data))),
-                                unique_timestamped_data_from_picks=str(list(set(retrieved_timestamps))),
-                                unique_picks_found=str(number_picks_processed)
-                            )
-                        else:
-                            logger.info(
-                                'pickquery.results',
-                                pick_initQueryTime=str(initial_starttime),
-                                pick_finalQueryTime=str(final_starttime),
-                                queryDB_picks_time=str(querying_time),
-                                unique_picks_found="No picks in current inset"
-                            )                            
-                        
-                        #STEP 4: All Redis based, so expire all but last 5 minutes of picks that we see 
-                        #At the end of those 30 seconds, as it queries those picks, no matter what we delete picks older than 5 minutes from the max timestamp
-                        self.querypickPickRun.expire() #only keep the last 5 minutes of picks that we see
-                        string_memAfterClear=self.querypickPickRun.get_memory_usage()
-
-                    get_stations_time_immed_elapsed=round(orgpick_runGaMMa.elapsed,3) #0.003
-                    # print("Time ran (subset), organizing pick data: "+str(get_stations_time_immed_elapsed))
-
                     #to compare if we are cleaning up the memory
                     logger.info(
                         'memorycheck.results',
                         memory_atBegin=string_memAtBegin,
-                        memory_afterExpir=string_memAfterExpir,
-                        memory_afterExpirPicks=string_memAfterClear
+                        memory_afterExpir=string_memAfterExpir
                     )
 
                     #1/17/23 RT update: Want to add the querying information: gbytes_scanned_thirty,gbytes_metered_thirty,cost_for_query_thirty
@@ -488,7 +403,6 @@ class PickRun:
                         total_process_time=alltime_elapsed,
                         batch_time=batch_time_elapsed,
                         expire_time=expire_time_elapsed,
-                        organize_save_picks_fromquery_time=get_stations_time_immed_elapsed,
                         access_memoryAtBeginning_time=memoryAtBegin_time_elapsed,
                         access_memoryAfterExpire_time=memoryAfterExpir_time_elapsed,
                         state=state
