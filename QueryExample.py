@@ -20,7 +20,8 @@ class PickExpire:
         try:
             max_value=value_max[0][1]
         except:
-            max_value=value_max #set to an empty list, if there is nothing that has been queried back. Otherwise we get the data's timestamp back
+            # max_value=value_max #set to an empty list, if there is nothing that has been queried back. Otherwise we get the data's timestamp back
+            max_value=0 #Set to 0, so we are forced to expire something (cannot expire a list); had an error in the past when we are monitoring ingestion in the past
 
         return max_value
 
@@ -104,14 +105,16 @@ class QueryExample:
             return list_of_dicts_returned
         except Exception as err:
             logger.info('data_query.exception',error=str(err))
-            return 0
+            # return 0
+            return [] #previously return 0, but this is our way to indicate an empty list as well if there is a problem
 
     def get_max_timestamp_query(self):
         value_max=self.client.zrevrange(self.quakedata, 0, 0,withscores=True)
         try:
             max_value=value_max[0][1]
         except:
-            max_value=value_max #set to an empty list, if there is nothing that has been queried back. Otherwise we get the data's timestamp back
+            # max_value=value_max #set to an empty list, if there is nothing that has been queried back. Otherwise we get the data's timestamp back
+            max_value=0 #Set to 0, so we are forced to expire something (cannot expire a list); had an error in the past when we are monitoring ingestion in the past
 
         return max_value
 
